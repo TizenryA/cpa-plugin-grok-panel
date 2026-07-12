@@ -2,7 +2,7 @@
 
 > 为 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 打造的 Grok 账号管理面板，一个插件搞定统计、分类、健康检查和安全清理。
 
-**版本** `v1.1.5` ｜ **平台** Linux amd64 / arm64 ｜ **语言** 中文 ｜ **License** MIT
+**版本** `v1.1.6` ｜ **平台** Linux / macOS / Windows ｜ **语言** 中文 ｜ **License** MIT
 
 **仓库地址**：https://github.com/TizenryA/cpa-plugin-grok-panel
 
@@ -152,7 +152,7 @@ plugins:
 ```bash
 curl -X POST \
   -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
-  "https://YOUR_CPA_HOST/v0/management/plugin-store/grok-panel/install?source=YOUR_SOURCE_ID&version=v1.1.5"
+  "https://YOUR_CPA_HOST/v0/management/plugin-store/grok-panel/install?source=YOUR_SOURCE_ID&version=v1.1.6"
 ```
 
 > 这里的管理密钥只用于执行安装操作，不会写入插件。
@@ -166,27 +166,39 @@ curl -X POST \
 从 [Releases](https://github.com/TizenryA/cpa-plugin-grok-panel/releases) 下载与宿主匹配的压缩包：
 
 ```text
-grok-panel_1.1.5_linux_amd64.zip
-grok-panel_1.1.5_linux_arm64.zip
+grok-panel_1.1.6_linux_amd64.zip
+grok-panel_1.1.6_linux_arm64.zip
+grok-panel_1.1.6_darwin_amd64.zip
+grok-panel_1.1.6_darwin_arm64.zip
+grok-panel_1.1.6_windows_amd64.zip
+grok-panel_1.1.6_windows_arm64.zip
 ```
 
-解压后将 `grok-panel.so` 放入 CPA 配置的插件目录：
+解压后将插件库文件放入 CPA 配置的插件目录：
 
 ```text
-plugins/linux/amd64/grok-panel-v1.1.5.so
-plugins/linux/arm64/grok-panel-v1.1.5.so
+plugins/linux/amd64/grok-panel-v1.1.6.so
+plugins/linux/arm64/grok-panel-v1.1.6.so
+plugins/darwin/amd64/grok-panel-v1.1.6.dylib
+plugins/darwin/arm64/grok-panel-v1.1.6.dylib
+plugins/windows/amd64/grok-panel-v1.1.6.dll
+plugins/windows/arm64/grok-panel-v1.1.6.dll
 ```
 
 CPA 安装时会按宿主机 `GOOS/GOARCH` 自动选择对应 zip。当前已发布：
 
-| 平台 | 资产 |
-|---|---|
-| Linux x86_64 | `*_linux_amd64.zip` |
-| Linux ARM64 | `*_linux_arm64.zip` |
+| 平台 | 资产 | 库文件 |
+|---|---|---|
+| Linux x86_64 | `*_linux_amd64.zip` | `grok-panel.so` |
+| Linux ARM64 | `*_linux_arm64.zip` | `grok-panel.so` |
+| macOS Intel | `*_darwin_amd64.zip` | `grok-panel.dylib` |
+| macOS Apple Silicon | `*_darwin_arm64.zip` | `grok-panel.dylib` |
+| Windows x86_64 | `*_windows_amd64.zip` | `grok-panel.dll` |
+| Windows ARM64 | `*_windows_arm64.zip` | `grok-panel.dll` |
 
 若出现 `plugin_install_failed`，优先检查：
 
-1. 宿主架构是否已有对应 zip（例如 Mac/Windows 暂未提供）
+1. 宿主架构是否已有对应 zip
 2. CPA 机器是否能访问 GitHub Release
 3. 返回体里的 `message` 原文（比 toast 更准确）
 
