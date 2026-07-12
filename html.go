@@ -5,42 +5,44 @@ const htmlPage = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grok 面板 v1.1.0</title>
+<title>Grok 面板 v1.1.1</title>
 <style>
-:root{--bg:#ecebe5;--card:#f7f6f0;--ink:#242522;--muted:#6f716b;--line:#454740;--soft:#dddcd4;--soft2:#d1d0c7;--green:#5f735f;--red:#8b5f59;--yellow:#8a7f5d;--blue:#5d6f78;--violet:#6f6678}
+:root{--bg:#1a1a18;--card:#232320;--card2:#2a2a26;--ink:#e8e6df;--muted:#9a9890;--line:#3a3a34;--soft:#333330;--soft2:#3d3d38;--green:#5faa5f;--red:#d05858;--yellow:#c4a44e;--blue:#5d8fb8;--violet:#8a7ab8;--green-bg:#1e2e1e;--red-bg:#2e1e1e;--yellow-bg:#2e2a1e}
 *{box-sizing:border-box}
 html,body{min-height:100vh}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:'SF Mono','Cascadia Code','JetBrains Mono',Consolas,monospace;font-size:0.95vw;line-height:1.45;padding:2vw}
 button,input,select{font-family:inherit;color:var(--ink)}
-button{background:var(--card);border:0.12vw solid var(--line);padding:0.7vh 0.9vw;min-height:3.8vh;cursor:pointer;font-size:0.78vw;text-transform:uppercase;letter-spacing:0.04vw;border-radius:0}
-button:hover:not(:disabled),button.armed{background:var(--line);color:var(--card)}
-button:disabled{cursor:not-allowed;opacity:0.46;background:var(--soft)}
-input,select{background:var(--card);border:0.12vw solid var(--line);padding:0.65vh 0.7vw;min-height:3.8vh;font-size:0.78vw;border-radius:0}
+button{background:var(--card2);border:0.12vw solid var(--line);padding:0.7vh 0.9vw;min-height:3.8vh;cursor:pointer;font-size:0.78vw;text-transform:uppercase;letter-spacing:0.04vw;border-radius:0}
+button:hover:not(:disabled),button.armed{background:var(--line);color:var(--ink)}
+button.armed{background:var(--red);border-color:var(--red);color:#fff}
+button:disabled{cursor:not-allowed;opacity:0.4;background:var(--soft)}
+input,select{background:var(--card2);border:0.12vw solid var(--line);padding:0.65vh 0.7vw;min-height:3.8vh;font-size:0.78vw;border-radius:0;color:var(--ink)}
 input:focus,select:focus,button:focus{outline:0.18vw solid var(--blue);outline-offset:0.18vw}
-input[type=checkbox]{appearance:none;width:1.1vw;height:1.1vw;min-height:1.1vw;padding:0;margin:0;background:var(--card);vertical-align:middle}
-input[type=checkbox]:checked{background:var(--line)}
+input[type=checkbox]{appearance:none;width:1.1vw;height:1.1vw;min-height:1.1vw;padding:0;margin:0;background:var(--card2);border:0.1vw solid var(--muted);vertical-align:middle;cursor:pointer}
+input[type=checkbox]:checked{background:var(--green);border-color:var(--green)}
 .shell{width:96vw;margin:0 auto}
 .topline{display:flex;justify-content:space-between;align-items:stretch;gap:1vw;margin-bottom:1.2vh}
 .brand{display:flex;align-items:center;gap:0.8vw;min-height:4vh}
 h1{font-size:1.8vw;line-height:1;margin:0;font-weight:800;letter-spacing:0.08vw}
 h2{font-size:1.05vw;margin:0 0 1vh 0;font-weight:800;letter-spacing:0.05vw;border-bottom:0.12vw solid var(--line);padding-bottom:0.8vh;text-transform:uppercase}
-.status-dot{width:0.8vw;height:0.8vw;background:var(--green);display:inline-block;border:0.08vw solid var(--line)}
-.status-dot.err{background:var(--red)}
+.status-dot{width:0.9vw;height:0.9vw;background:var(--green);display:inline-block;border:0.08vw solid var(--green);border-radius:50%}
+.status-dot.err{background:var(--red);border-color:var(--red)}
 .muted{color:var(--muted);font-size:0.74vw}
 .top-actions{display:flex;gap:0.7vw;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-.feedback{border:0.12vw solid var(--line);background:var(--card);padding:0.8vh 1vw;min-height:4vh;margin-bottom:1vh;color:var(--muted)}
-.feedback.ok{border-color:var(--green);color:var(--green)}
-.feedback.warn{border-color:var(--yellow);color:var(--yellow)}
-.feedback.error{border-color:var(--red);color:var(--red)}
+.feedback{border:0.12vw solid var(--line);background:var(--card);padding:0.8vh 1vw;min-height:4vh;margin-bottom:1vh;color:var(--muted);font-size:0.8vw}
+.feedback.ok{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+.feedback.warn{border-color:var(--yellow);color:var(--yellow);background:var(--yellow-bg)}
+.feedback.error{border-color:var(--red);color:var(--red);background:var(--red-bg)}
 .stats-grid{display:grid;grid-template-columns:23vw 23vw 23vw 23vw;gap:1vw;margin-bottom:1.5vh}
 .stat-card,.panel{background:var(--card);border:0.12vw solid var(--line);padding:1.1vh 1vw;border-radius:0}
-.stat-card{min-height:13vh}
+.stat-card{min-height:13vh;display:flex;flex-direction:column;justify-content:space-between}
+.stat-card:hover{border-color:var(--muted)}
 .stat-label{font-size:0.68vw;color:var(--muted);text-transform:uppercase;letter-spacing:0.06vw}
 .stat-value{font-size:1.6vw;line-height:1.1;font-weight:800;margin-top:0.7vh;word-break:break-word}
 .stat-sub{font-size:0.68vw;color:var(--muted);margin-top:0.55vh}
-.bar-container{width:18vw;height:0.9vh;background:var(--soft2);margin-top:0.7vh;border:0.08vw solid var(--line)}
-.bar-container.small{width:11vw;height:0.85vh;margin-top:0.35vh}
-.bar-fill{height:0.7vh;background:var(--green)}
+.bar-container{width:18vw;height:1.2vh;background:var(--soft2);margin-top:0.7vh;border:0.08vw solid var(--line);overflow:hidden}
+.bar-container.small{width:11vw;height:1vh;margin-top:0.35vh}
+.bar-fill{height:100%;background:var(--green);transition:width 0.3s}
 .bar-fill.warn{background:var(--yellow)}
 .bar-fill.danger{background:var(--red)}
 .panel{margin-bottom:1.5vh}
@@ -49,40 +51,49 @@ h2{font-size:1.05vw;margin:0 0 1vh 0;font-weight:800;letter-spacing:0.05vw;borde
 .field label,.checkline{font-size:0.72vw;color:var(--muted)}
 .number-input{width:18vw}
 .checkline{display:flex;align-items:center;gap:0.45vw;min-height:3.8vh;border:0.08vw solid var(--soft2);padding:0.6vh 0.6vw;background:var(--bg)}
+.checkline:has(input:checked){border-color:var(--green);background:var(--green-bg)}
 .help-text{font-size:0.68vw;color:var(--muted);margin-top:0.9vh}
-.chart-row{display:flex;align-items:flex-end;gap:0.25vw;height:16vh;padding:1vh 0;overflow-x:auto;overflow-y:hidden;background:var(--bg);border:0.08vw solid var(--soft2)}
-.chart-bar{flex:0 0 1.3vw;min-height:0.35vh;background:var(--green);opacity:0.72;position:relative;border:0.06vw solid var(--line)}
-.chart-bar.fail{background:var(--red)}
+.chart-row{display:flex;align-items:flex-end;gap:0.25vw;height:16vh;padding:1vh 0;overflow-x:auto;overflow-y:hidden;background:var(--bg);border:0.08vw solid var(--line)}
+.chart-bar{flex:0 0 1.3vw;min-height:0.35vh;background:var(--green);opacity:0.72;position:relative;border:0.06vw solid var(--green)}
+.chart-bar.fail{background:var(--red);border-color:var(--red)}
 .chart-bar:hover{opacity:1}
-.chart-bar:hover::after{content:attr(data-tip);position:absolute;bottom:15vh;left:0;background:var(--line);color:var(--card);padding:0.45vh 0.55vw;font-size:0.64vw;white-space:normal;z-index:8;width:14vw;border:0.08vw solid var(--card)}
+.chart-bar:hover::after{content:attr(data-tip);position:absolute;bottom:15vh;left:0;background:var(--card2);color:var(--ink);padding:0.45vh 0.55vw;font-size:0.64vw;white-space:normal;z-index:8;width:14vw;border:0.08vw solid var(--line)}
 .chart-empty{color:var(--muted);padding:5vh 1vw;font-size:0.8vw}
 .filter-grid{display:grid;grid-template-columns:23vw 13vw 13vw 13vw 13vw 17vw;gap:0.8vw;margin-bottom:0.9vh;align-items:end}
 .search-box{width:23vw}
 .select-filter{width:13vw}
 .sort-filter{width:17vw}
-.batchbar{display:flex;align-items:center;gap:0.7vw;flex-wrap:wrap;margin-bottom:0.9vh;background:var(--bg);border:0.08vw solid var(--soft2);padding:0.8vh 0.8vw}
+.batchbar{display:flex;align-items:center;gap:0.7vw;flex-wrap:wrap;margin-bottom:0.9vh;background:var(--card2);border:0.08vw solid var(--line);padding:0.8vh 0.8vw}
 .batchbar .spacer{flex:1}
 .table-wrap{max-height:52vh;overflow:auto;border:0.12vw solid var(--line);background:var(--card)}
 table{border-collapse:collapse;width:142vw;min-width:142vw;background:var(--card)}
-th,td{text-align:left;padding:0.7vh 0.6vw;border-bottom:0.08vw solid var(--soft2);font-size:0.75vw;vertical-align:top}
-th{position:sticky;top:0;z-index:4;background:var(--line);color:var(--card);font-weight:800;text-transform:uppercase;font-size:0.65vw;letter-spacing:0.04vw}
-tr:hover{background:var(--bg)}
+th,td{text-align:left;padding:0.7vh 0.6vw;border-bottom:0.08vw solid var(--line);font-size:0.75vw;vertical-align:top}
+th{position:sticky;top:0;z-index:4;background:var(--card2);color:var(--ink);font-weight:800;text-transform:uppercase;font-size:0.65vw;letter-spacing:0.04vw;border-bottom:0.15vw solid var(--muted)}
+tr:hover{background:var(--card2)}
 .email-cell{width:27vw;word-break:break-all}
 .actions-cell{display:flex;gap:0.45vw;flex-wrap:wrap}
-.tag{display:inline-block;padding:0.25vh 0.4vw;border:0.08vw solid var(--line);font-size:0.64vw;font-weight:800;letter-spacing:0.03vw;text-transform:uppercase;min-width:4.8vw;text-align:center;background:var(--soft)}
-.tag.active,.tag.healthy,.tag.standard{background:var(--green);color:var(--card)}
-.tag.disabled,.tag.invalid{background:var(--red);color:var(--card)}
-.tag.warn,.tag.heavy{background:var(--yellow);color:var(--card)}
-.tag.unknown{background:var(--soft2);color:var(--ink)}
-.tag.super{background:var(--violet);color:var(--card)}
-.tag.info{background:var(--blue);color:var(--card)}
+.tag{display:inline-block;padding:0.3vh 0.5vw;border:0.08vw solid;font-size:0.64vw;font-weight:800;letter-spacing:0.03vw;text-transform:uppercase;min-width:4.8vw;text-align:center;border-radius:0}
+.tag.active,.tag.healthy,.tag.free{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.tag.disabled,.tag.invalid{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.tag.warn{background:var(--yellow-bg);border-color:var(--yellow);color:var(--yellow)}
+.tag.unknown{background:var(--soft);border-color:var(--muted);color:var(--muted)}
+.tag.super{background:#2a2230;border-color:var(--violet);color:var(--violet)}
+.tag.heavy{background:#2a281e;border-color:var(--yellow);color:var(--yellow)}
+.tag.other{background:var(--soft);border-color:var(--muted);color:var(--muted)}
 .cell-sub{font-size:0.62vw;color:var(--muted);margin-top:0.35vh;word-break:break-word}
-.red-text{color:var(--red)}
+.red-text{color:var(--red);font-weight:700}
 .summary-row{display:flex;gap:1.2vw;flex-wrap:wrap;font-size:0.72vw;color:var(--muted);margin-top:0.9vh}
 .summary-row b{color:var(--ink)}
-.row-invalid{background:#f0e6e2}
-.row-disabled{background:#ebe4e0}
-.row-warn{background:#eee9dc}
+.row-invalid{background:var(--red-bg)!important}
+.row-disabled{background:var(--soft)!important;opacity:0.6}
+.row-warn{background:var(--yellow-bg)!important}
+.health-indicator{display:inline-flex;align-items:center;gap:0.4vw}
+.health-dot{width:0.7vw;height:0.7vw;border-radius:50%;display:inline-block;flex-shrink:0}
+.health-dot.healthy{background:var(--green);box-shadow:0 0 0.4vw var(--green)}
+.health-dot.invalid{background:var(--red);box-shadow:0 0 0.4vw var(--red)}
+.health-dot.warn{background:var(--yellow);box-shadow:0 0 0.4vw var(--yellow)}
+.health-dot.disabled{background:var(--muted)}
+.health-dot.unknown{background:var(--soft2);border:0.08vw solid var(--muted)}
 @media (orientation:portrait),(hover:none) and (pointer:coarse){body{font-size:3.2vw;padding:3vw}.shell{width:94vw}.topline{flex-direction:column}.brand{align-items:flex-start;flex-direction:column;gap:1vh}.top-actions{justify-content:stretch;flex-direction:column;align-items:stretch}h1{font-size:6vw}h2{font-size:3.6vw}.muted{font-size:2.8vw}.status-dot{width:2.8vw;height:2.8vw}button,input,select{font-size:2.8vw;min-height:5.2vh;padding:0.9vh 2vw}input[type=checkbox]{width:4vw;height:4vw;min-height:4vw}.feedback{font-size:2.8vw;padding:1vh 2vw}.stats-grid{grid-template-columns:94vw}.stat-card{min-height:12vh}.stat-label,.stat-sub,.field label,.checkline,.help-text,.summary-row{font-size:2.6vw}.stat-value{font-size:5.2vw}.form-grid,.filter-grid{grid-template-columns:94vw}.number-input,.search-box,.select-filter,.sort-filter{width:94vw}.checkline{gap:2vw;padding:1vh 2vw}.top-actions button,.batchbar button{width:94vw}.batchbar{flex-direction:column;align-items:stretch;gap:1vh}.bar-container{width:80vw;height:1.2vh}.bar-container.small{width:24vw}.bar-fill{height:0.95vh}.chart-row{height:18vh}.chart-bar{flex-basis:3vw}.chart-bar:hover::after{font-size:2.4vw;width:42vw;bottom:16vh}.table-wrap{max-height:55vh}table{width:210vw;min-width:210vw}th,td{font-size:2.6vw;padding:0.9vh 1.4vw}th{font-size:2.3vw}.tag{font-size:2.3vw;min-width:13vw;padding:0.4vh 1vw}.cell-sub{font-size:2.2vw}.actions-cell button{font-size:2.3vw;min-height:4.8vh}}
 </style>
 </head>
@@ -115,7 +126,7 @@ tr:hover{background:var(--bg)}
 <label class="checkline"><input type="checkbox" id="autoDelete"> 自动删除无效 默认关</label>
 <label class="checkline"><input type="checkbox" id="protectSuper" checked> 保护 super 默认开</label>
 <label class="checkline"><input type="checkbox" id="protectHeavy" checked> 保护 heavy 默认开</label>
-<label class="checkline"><input type="checkbox" id="protectUnknown" checked> 保护 unknown 默认开</label>
+<label class="checkline"><input type="checkbox" id="protectUnknown" checked> 保护未知 默认开</label>
 </div>
 <div class="help-text">删除和清理需要再次点击同一按钮确认；若后端端点或 CPA 管理授权不可用，会在这里显示明确错误。</div>
 </section>
@@ -124,7 +135,7 @@ tr:hover{background:var(--bg)}
 <div class="filter-grid">
 <div class="field"><label for="searchBox">搜索</label><input type="text" class="search-box" id="searchBox" placeholder="邮箱、状态、类型"></div>
 <div class="field"><label for="statusFilter">状态</label><select class="select-filter" id="statusFilter"><option value="all">全部</option><option value="active">活跃</option><option value="disabled">禁用</option><option value="other">其他</option><option value="unknown">未知</option></select></div>
-<div class="field"><label for="typeFilter">类型</label><select class="select-filter" id="typeFilter"><option value="all">全部</option><option value="standard">standard</option><option value="super">super</option><option value="heavy">heavy</option><option value="unknown">unknown</option></select></div>
+<div class="field"><label for="typeFilter">类型</label><select class="select-filter" id="typeFilter"><option value="all">全部</option><option value="free">Free</option><option value="super">Super</option><option value="heavy">Heavy</option></select></div>
 <div class="field"><label for="healthFilter">健康</label><select class="select-filter" id="healthFilter"><option value="all">全部</option><option value="healthy">健康</option><option value="warn">警告</option><option value="invalid">无效</option><option value="disabled">禁用</option><option value="unknown">未知</option></select></div>
 <div class="field"><label for="usageFilter">用量</label><select class="select-filter" id="usageFilter"><option value="all">全部</option><option value="unused">未使用</option><option value="low">低于一半</option><option value="warn">一半以上</option><option value="high">高于八成</option></select></div>
 <div class="field"><label for="sortFilter">排序</label><select class="sort-filter" id="sortFilter"><option value="success_desc">成功请求降序</option><option value="failed_desc">失败降序</option><option value="usage_desc">用量降序</option><option value="health_asc">健康优先</option><option value="type_asc">类型</option><option value="email_asc">邮箱</option></select></div>
@@ -142,7 +153,7 @@ tr:hover{background:var(--bg)}
 </div>
 <script>
 /*
-Frontend v1.1.0 same-origin endpoint contract for a matching backend.
+Frontend v1.1.1 same-origin endpoint contract for a matching backend.
 No management key is embedded in this page; CPA iframe/session auth must be supplied by the host.
 GET  ./data                         -> current stats shape used by v1.0 plus optional account_type, type, health, unavailable fields.
 POST ./accounts/check               -> body {emails:[string], threshold:number}; returns {results:[{email, health, detail, account_type}]}.
@@ -150,7 +161,7 @@ POST ./accounts/delete              -> body {emails:[string], threshold:number, 
 POST ./accounts/cleanup-invalid     -> body {emails:[string], threshold:number, protect:{super:boolean, heavy:boolean, unknown:boolean}}.
 If these mutation endpoints are absent, the UI reports that operations are unavailable instead of using any hardcoded key.
 */
-var settingsKey='grok-panel-v1.1.0-settings';
+var settingsKey='grok-panel-v1.1.1-settings';
 var allData=[];
 var lastData=null;
 var selected={};
@@ -179,7 +190,7 @@ function readCPAConnection(){try{var raw=localStorage.getItem('cli-proxy-auth');
 function managementFetch(path,options){var conn=readCPAConnection();if(!conn)throw new Error('当前管理中心没有保存管理密钥。请退出后勾选“记住密码”重新登录，再打开插件。');options=options||{};options.headers=options.headers||{};options.headers.Authorization='Bearer '+conn.managementKey;if(!options.headers.accept)options.headers.accept='application/json';return fetch((conn.apiBase||window.location.origin)+'/v0/management'+path,options)}
 function setFeedback(msg,type){var el=byId('feedback');el.className='feedback '+(type||'');el.textContent=msg}
 function setBusy(flag){busy=!!flag;document.body.classList.toggle('busy',busy);updateToolbarState();renderTable()}
-function parseJsonText(text,endpoint){try{return text?JSON.parse(text):{}}catch(e){var low=String(text||'').toLowerCase();if(low.indexOf('<!doctype')>=0||low.indexOf('<html')>=0)throw new Error('操作端点 '+endpoint+' 未启用：当前后端返回了面板页面，请升级插件后端 v1.1.0 或注册该管理路由。');throw new Error('操作端点 '+endpoint+' 返回非 JSON：'+String(text||'').slice(0,90))}}
+function parseJsonText(text,endpoint){try{return text?JSON.parse(text):{}}catch(e){var low=String(text||'').toLowerCase();if(low.indexOf('<!doctype')>=0||low.indexOf('<html')>=0)throw new Error('操作端点 '+endpoint+' 未启用：当前后端返回了面板页面，请升级插件后端 v1.1.1 或注册该管理路由。');throw new Error('操作端点 '+endpoint+' 返回非 JSON：'+String(text||'').slice(0,90))}}
 async function managementPluginPost(path,payload){var resp=await managementFetch('/plugins/grok-panel/'+String(path).replace(/^\/+/,''),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload||{})});var text=await resp.text();var data=parseJsonText(text,path);if(!resp.ok)throw new Error('HTTP '+resp.status+'：'+messageFromData(data,text));return data||{}}
 async function runPluginChecks(emails){var indices=[];emails.forEach(function(email){var x=accountByEmail(email);var idx=x&&String(x.auth_index||x.authIndex||'').trim();if(idx)indices.push(idx)});var records=[];for(var i=0;i<indices.length;i++){var data=await managementPluginPost('checks',{auth_index:indices[i]});if(Array.isArray(data.records))records=records.concat(data.records)}return{records:records}}
 async function deleteAuthNames(names){var resp=await managementFetch('/auth-files',{method:'DELETE',headers:{'content-type':'application/json'},body:JSON.stringify({names:names})});var text=await resp.text();var data=parseJsonText(text,'auth-files');if(!resp.ok)throw new Error('HTTP '+resp.status+'：'+messageFromData(data,text));return data||{}}
@@ -196,7 +207,7 @@ function failThreshold(){return Math.max(1,parseInt(settings.threshold,10)||3)}
 function usagePct(x){var tl=tokenLimit();var et=(Number(x&&x.success)||0)*tokensPerReq();return tl>0?Math.max(0,Math.min(999,et/tl*100)):0}
 function isMobileView(){return window.matchMedia&&window.matchMedia('(orientation:portrait),(hover:none) and (pointer:coarse)').matches}
 function meterWidth(pct,kind){var span=kind==='row'?(isMobileView()?24:11):(isMobileView()?80:18);var clamped=Math.max(0,Math.min(100,Number(pct)||0));return(clamped*span/100).toFixed(2)+'vw'}
-function classifyType(x){var key=makeRowKey(x,0);var raw=typeOverrides[key]||x.tier||x.account_type||x.accountType||x.account_kind||x.accountKind||x.plan||x.type||x.label||'';raw=String(raw||'').trim();var low=raw.toLowerCase();if(!raw||low==='unknown'||low==='unk')return{key:'unknown',label:'unknown'};if(low.indexOf('super')>=0||low.indexOf('premium')>=0||low.indexOf('paid')>=0||low.indexOf('pro')>=0||low.indexOf('max')>=0)return{key:'super',label:raw};if(low.indexOf('heavy')>=0||low.indexOf('bulk')>=0||low.indexOf('team')>=0)return{key:'heavy',label:raw};return{key:'standard',label:raw}}
+function classifyType(x){var key=makeRowKey(x,0);var raw=typeOverrides[key]||x.tier||x.account_type||x.accountType||x.account_kind||x.accountKind||x.plan||x.type||x.label||'';raw=String(raw||'').trim();var low=raw.toLowerCase();if(!raw||low==='unknown'||low==='unk')return{key:'free',label:'Free'};if(low.indexOf('oauth')>=0)return{key:'free',label:'Free'};if(low.indexOf('super')>=0||low.indexOf('premium')>=0||low.indexOf('paid')>=0||low.indexOf('pro')>=0||low.indexOf('max')>=0)return{key:'super',label:'Super'};if(low.indexOf('heavy')>=0||low.indexOf('bulk')>=0||low.indexOf('team')>=0)return{key:'heavy',label:'Heavy'};if(low.indexOf('free')>=0||low.indexOf('basic')>=0||low.indexOf('standard')>=0||low.indexOf('normal')>=0)return{key:'free',label:'Free'};return{key:'free',label:raw}}
 function isHeavyAccount(x){return classifyType(x).key==='heavy'}
 function statusKey(x){var s=getStatus(x).toLowerCase();if(x&&x.disabled)return'disabled';if(!s)return'unknown';if(s.indexOf('disable')>=0||s.indexOf('off')>=0)return'disabled';if(s.indexOf('active')>=0||s.indexOf('ok')>=0||s.indexOf('ready')>=0||s.indexOf('available')>=0)return'active';return'other'}
 function mapHealth(raw){var low=String(raw||'').toLowerCase();if(!low)return null;if(low.indexOf('disabled')>=0||low.indexOf('off')>=0)return{key:'disabled',label:'禁用',detail:raw};if(low.indexOf('invalid')>=0||low.indexOf('expired')>=0||low.indexOf('revoked')>=0||low.indexOf('unavailable')>=0||low.indexOf('error')>=0||low.indexOf('dead')>=0)return{key:'invalid',label:'无效',detail:raw};if(low.indexOf('warn')>=0||low.indexOf('limited')>=0||low.indexOf('rate')>=0||low.indexOf('fail')>=0)return{key:'warn',label:'警告',detail:raw};if(low.indexOf('healthy')>=0||low.indexOf('active')>=0||low.indexOf('ok')>=0||low.indexOf('valid')>=0)return{key:'healthy',label:'健康',detail:raw};if(low.indexOf('unknown')>=0)return{key:'unknown',label:'未知',detail:raw};return null}
@@ -204,12 +215,12 @@ function deriveHealth(x){var key=makeRowKey(x,0);if(healthOverrides[key])return 
 function protectReason(x){var t=classifyType(x);if(settings.protectSuper&&t.key==='super')return'保护 super';if(settings.protectHeavy&&isHeavyAccount(x))return'保护 heavy';if(settings.protectUnknown&&t.key==='unknown')return'保护 unknown';return''}
 function isInvalidCandidate(x){var h=deriveHealth(x).key;return h==='invalid'||h==='disabled'}
 function cleanupCandidates(list){return(list||getFilteredData()).filter(function(x){return getEmail(x)&&isInvalidCandidate(x)&&!protectReason(x)})}
-function renderStats(d){d=d||{};var total=d.total_files||allData.length||0;var active=d.active_files||0;var dis=d.disabled_files||0;var ts=d.total_success||0;var tf=d.total_failed||0;if(!d.total_files&&allData.length){active=allData.filter(function(x){return statusKey(x)==='active'}).length;dis=allData.filter(function(x){return statusKey(x)==='disabled'}).length;ts=sum(allData,'success');tf=sum(allData,'failed')}var et=ts*tokensPerReq();var cap=total*tokenLimit();var pct=cap>0?et/cap*100:0;byId('statTotal').textContent=total;byId('statTotalSub').textContent=dis+' 个已禁用';byId('statActive').textContent=active;byId('statActiveSub').textContent=dis+' 个禁用';byId('statRequests').textContent=fmt(ts);byId('statRequestsSub').textContent='失败 '+fmt(tf)+' | 率 '+(ts+tf>0?(ts/(ts+tf)*100).toFixed(1):0)+'%';byId('statTokens').textContent=fmt(et);byId('statTokensSub').textContent=tokensPerReq()+' token/请求';byId('statCapacity').textContent=fmt(cap);byId('statCapacitySub').textContent=tokenLimit()+' token/账号';byId('statUsage').textContent=pct.toFixed(2)+'%';byId('statUsageSub').textContent=fmt(et)+' / '+fmt(cap);var bar=byId('usageBar');bar.style.width=meterWidth(pct,'stat');bar.className='bar-fill'+(pct>80?' danger':pct>50?' warn':'');var typeCounts={standard:0,super:0,heavy:0,unknown:0};var healthCounts={healthy:0,warn:0,invalid:0,disabled:0,unknown:0};allData.forEach(function(x){var t=classifyType(x).key;typeCounts[t]=(typeCounts[t]||0)+1;var h=deriveHealth(x).key;healthCounts[h]=(healthCounts[h]||0)+1});var invalidAll=allData.filter(isInvalidCandidate);var cleanAll=cleanupCandidates(allData);byId('statTypes').textContent='S '+typeCounts.super+' / H '+typeCounts.heavy;byId('statTypesSub').textContent='standard '+typeCounts.standard+' | unknown '+typeCounts.unknown;byId('statHealth').textContent=healthCounts.healthy+' 健康';byId('statHealthSub').textContent='警告 '+healthCounts.warn+' | 无效 '+healthCounts.invalid+' | 未知 '+healthCounts.unknown;byId('statInvalid').textContent=invalidAll.length;byId('statInvalidSub').textContent=cleanAll.length+' 可清理 | '+(invalidAll.length-cleanAll.length)+' 受保护';byId('statSelected').textContent=getSelectedEmails().length;byId('statSelectedSub').textContent=getFilteredData().length+' 个当前可见'}
+function renderStats(d){d=d||{};var total=d.total_files||allData.length||0;var active=d.active_files||0;var dis=d.disabled_files||0;var ts=d.total_success||0;var tf=d.total_failed||0;if(!d.total_files&&allData.length){active=allData.filter(function(x){return statusKey(x)==='active'}).length;dis=allData.filter(function(x){return statusKey(x)==='disabled'}).length;ts=sum(allData,'success');tf=sum(allData,'failed')}var et=ts*tokensPerReq();var cap=total*tokenLimit();var pct=cap>0?et/cap*100:0;byId('statTotal').textContent=total;byId('statTotalSub').textContent=dis+' 个已禁用';byId('statActive').textContent=active;byId('statActiveSub').textContent=dis+' 个禁用';byId('statRequests').textContent=fmt(ts);byId('statRequestsSub').textContent='失败 '+fmt(tf)+' | 率 '+(ts+tf>0?(ts/(ts+tf)*100).toFixed(1):0)+'%';byId('statTokens').textContent=fmt(et);byId('statTokensSub').textContent=tokensPerReq()+' token/请求';byId('statCapacity').textContent=fmt(cap);byId('statCapacitySub').textContent=tokenLimit()+' token/账号';byId('statUsage').textContent=pct.toFixed(2)+'%';byId('statUsageSub').textContent=fmt(et)+' / '+fmt(cap);var bar=byId('usageBar');bar.style.width=meterWidth(pct,'stat');bar.className='bar-fill'+(pct>80?' danger':pct>50?' warn':'');var typeCounts={free:0,super:0,heavy:0,unknown:0};var healthCounts={healthy:0,warn:0,invalid:0,disabled:0,unknown:0};allData.forEach(function(x){var t=classifyType(x).key;typeCounts[t]=(typeCounts[t]||0)+1;var h=deriveHealth(x).key;healthCounts[h]=(healthCounts[h]||0)+1});var invalidAll=allData.filter(isInvalidCandidate);var cleanAll=cleanupCandidates(allData);byId('statTypes').textContent='F '+typeCounts.free+' / S '+typeCounts.super+' / H '+typeCounts.heavy;byId('statTypesSub').textContent='unknown '+typeCounts.unknown;byId('statHealth').textContent=healthCounts.healthy+' 正常';byId('statHealthSub').textContent='警告 '+healthCounts.warn+' | 无效 '+healthCounts.invalid+' | 未知 '+healthCounts.unknown;byId('statInvalid').textContent=invalidAll.length;byId('statInvalidSub').textContent=cleanAll.length+' 可清理 | '+(invalidAll.length-cleanAll.length)+' 受保护';byId('statSelected').textContent=getSelectedEmails().length;byId('statSelectedSub').textContent=getFilteredData().length+' 个当前可见'}
 function sum(arr,key){return arr.reduce(function(n,x){return n+(Number(x&&x[key])||0)},0)}
 function renderChart(buckets){var c=byId('chartRow');c.innerHTML='';if(!buckets||!buckets.length){c.innerHTML='<div class="chart-empty">暂无趋势数据</div>';return}buckets=buckets.slice().sort(function(a,b){return a.time<b.time?-1:1});var max=1;buckets.forEach(function(b){max=Math.max(max,(Number(b.success)||0)+(Number(b.failed)||0))});buckets.forEach(function(b){var total=(Number(b.success)||0)+(Number(b.failed)||0);var h=Math.max(0.35,total/max*14);var bar=document.createElement('div');bar.className='chart-bar'+((Number(b.failed)||0)>(Number(b.success)||0)?' fail':'');bar.style.height=h.toFixed(2)+'vh';bar.setAttribute('data-tip',String(b.time||'')+' | 成功:'+fmt(b.success)+' 失败:'+fmt(b.failed));c.appendChild(bar)})}
 function getFilteredData(){var s=byId('searchBox')?byId('searchBox').value.toLowerCase().trim():'';var sf=byId('statusFilter')?byId('statusFilter').value:'all';var tf=byId('typeFilter')?byId('typeFilter').value:'all';var hf=byId('healthFilter')?byId('healthFilter').value:'all';var uf=byId('usageFilter')?byId('usageFilter').value:'all';var arr=allData.filter(function(x){var email=getEmail(x).toLowerCase();var st=getStatus(x).toLowerCase();var typ=classifyType(x);var health=deriveHealth(x);var pct=usagePct(x);if(s&&email.indexOf(s)<0&&st.indexOf(s)<0&&typ.label.toLowerCase().indexOf(s)<0&&health.label.indexOf(s)<0)return false;if(sf!=='all'&&statusKey(x)!==sf)return false;if(tf!=='all'&&typ.key!==tf)return false;if(hf!=='all'&&health.key!==hf)return false;if(uf==='unused'&&(Number(x.success)||0)!==0)return false;if(uf==='low'&&pct>=50)return false;if(uf==='warn'&&(pct<50||pct>=80))return false;if(uf==='high'&&pct<80)return false;return true});var sort=byId('sortFilter')?byId('sortFilter').value:'success_desc';arr.sort(function(a,b){if(sort==='failed_desc')return(Number(b.failed)||0)-(Number(a.failed)||0);if(sort==='usage_desc')return usagePct(b)-usagePct(a);if(sort==='health_asc')return healthRank(a)-healthRank(b);if(sort==='type_asc')return classifyType(a).key<classifyType(b).key?-1:1;if(sort==='email_asc')return getEmail(a)<getEmail(b)?-1:1;return(Number(b.success)||0)-(Number(a.success)||0)});return arr}
 function healthRank(x){var order={invalid:0,disabled:1,warn:2,unknown:3,healthy:4};return order[deriveHealth(x).key]===undefined?9:order[deriveHealth(x).key]}
-function renderTable(){var tbody=byId('tableBody');if(!tbody)return;var f=getFilteredData();tbody.innerHTML='';f.forEach(function(x,i){var email=getEmail(x);var key=makeRowKey(x,i);var su=Number(x.success)||0;var fa=Number(x.failed)||0;var et=su*tokensPerReq();var pct=usagePct(x);var bc=pct>80?'danger':pct>50?'warn':'';var t=classifyType(x);var h=deriveHealth(x);var prot=protectReason(x);var armed=isArmed('delete:'+key);var disabled=busy||!email||!!prot;var tr=document.createElement('tr');tr.className='row-'+h.key;var protectedText=prot?'<div class="cell-sub">'+esc(prot)+'</div>':'';var heavyText=(isHeavyAccount(x)&&t.key!=='heavy')?'<div class="cell-sub">heavy usage</div>':'';var healthDetail=h.detail?'<div class="cell-sub">'+esc(h.detail)+'</div>':'';tr.innerHTML='<td><input type="checkbox" class="row-select" data-key="'+esc(key)+'" data-email="'+esc(email)+'" '+(selected[key]?'checked':'')+' '+(!email||busy?'disabled':'')+'></td><td>'+esc(i+1)+'</td><td class="email-cell">'+esc(email||'?')+protectedText+'</td><td><span class="tag '+esc(t.key)+'">'+esc(t.key)+'</span><div class="cell-sub">'+esc(t.label)+'</div>'+heavyText+'</td><td><span class="tag '+esc(h.key)+'">'+esc(h.label)+'</span>'+healthDetail+'</td><td><span class="tag '+esc(statusKey(x))+'">'+esc(statusKey(x))+'</span><div class="cell-sub">'+esc(getStatus(x)||'-')+'</div></td><td>'+fmt(su)+'</td><td>'+(fa>0?'<span class="red-text">'+fmt(fa)+'</span>':'0')+'</td><td>'+fmt(et)+'</td><td><div class="cell-sub">'+pct.toFixed(1)+'%</div><div class="bar-container small"><div class="bar-fill '+bc+'" style="width:'+meterWidth(pct,'row')+'"></div></div></td><td><div class="actions-cell"><button data-act="check" data-key="'+esc(key)+'" '+(busy||!email?'disabled':'')+'>检查</button><button data-act="delete" data-key="'+esc(key)+'" '+(disabled?'disabled':'')+' class="'+(armed?'armed':'')+'">'+(armed?'确认删除':'删除')+'</button></div></td>';tbody.appendChild(tr)});if(!f.length)tbody.innerHTML='<tr><td colspan="11" class="muted">无匹配结果</td></tr>';renderSummary(f);updateToolbarState(f);if(lastData)renderStatsOnlySelection()}
+function renderTable(){var tbody=byId('tableBody');if(!tbody)return;var f=getFilteredData();tbody.innerHTML='';f.forEach(function(x,i){var email=getEmail(x);var key=makeRowKey(x,i);var su=Number(x.success)||0;var fa=Number(x.failed)||0;var et=su*tokensPerReq();var pct=usagePct(x);var bc=pct>80?'danger':pct>50?'warn':'';var t=classifyType(x);var h=deriveHealth(x);var prot=protectReason(x);var armed=isArmed('delete:'+key);var disabled=busy||!email||!!prot;var tr=document.createElement('tr');tr.className='row-'+h.key;var protectedText=prot?'<div class="cell-sub">⚠ '+esc(prot)+'</div>':'';var healthDetail=h.detail?'<div class="cell-sub">'+esc(h.detail)+'</div>':'';var healthHtml='<span class="health-indicator"><span class="health-dot '+esc(h.key)+'"></span><span class="tag '+esc(h.key)+'">'+esc(h.label)+'</span></span>'+healthDetail;tr.innerHTML='<td><input type="checkbox" class="row-select" data-key="'+esc(key)+'" data-email="'+esc(email)+'" '+(selected[key]?'checked':'')+' '+(!email||busy?'disabled':'')+'></td><td>'+(i+1)+'</td><td class="email-cell">'+esc(email||'?')+protectedText+'</td><td><span class="tag '+esc(t.key)+'">'+esc(t.label)+'</span></td><td>'+healthHtml+'</td><td><span class="tag '+esc(statusKey(x))+'">'+esc(statusKey(x))+'</span><div class="cell-sub">'+esc(getStatus(x)||'-')+'</div></td><td>'+fmt(su)+'</td><td>'+(fa>0?'<span class="red-text">'+fmt(fa)+'</span>':'0')+'</td><td>'+fmt(et)+'</td><td><div class="cell-sub">'+pct.toFixed(1)+'%</div><div class="bar-container small"><div class="bar-fill '+bc+'" style="width:'+meterWidth(pct,'row')+'"></div></div></td><td><div class="actions-cell"><button data-act="check" data-key="'+esc(key)+'" '+(busy||!email?'disabled':'')+'>检查</button><button data-act="delete" data-key="'+esc(key)+'" '+(disabled?'disabled':'')+' class="'+(armed?'armed':'')+'">'+(armed?'确认删除':'删除')+'</button></div></td>';tbody.appendChild(tr)});if(!f.length)tbody.innerHTML='<tr><td colspan="11" class="muted" style="padding:3vh;text-align:center">没有匹配的账号</td></tr>';updateToolbarState(f);renderSummary(f);renderStatsOnlySelection()}
 function renderStatsOnlySelection(){byId('statSelected').textContent=getSelectedEmails().length;byId('statSelectedSub').textContent=getFilteredData().length+' 个当前可见'}
 function renderSummary(f){var used=f.filter(function(x){return(Number(x.success)||0)>0}).length;var avail=f.filter(function(x){return(Number(x.success)||0)===0&&!x.disabled}).length;var ts=sum(f,'success');var tf=sum(f,'failed');var invalid=f.filter(isInvalidCandidate).length;var clean=cleanupCandidates(f).length;byId('sumCount').textContent=f.length;byId('sumUsed').textContent=used;byId('sumAvail').textContent=avail;byId('sumRate').textContent=(ts+tf>0?(ts/(ts+tf)*100).toFixed(1):0)+'%';byId('sumInvalid').textContent=invalid;byId('sumCleanup').textContent=clean;byId('filterInfo').textContent=f.length+' / '+allData.length+' 可见，'+clean+' 可清理'}
 function renderAll(){if(lastData){renderStats(lastData);renderChart(lastData.recent_buckets||[])}renderTable()}

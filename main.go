@@ -1060,7 +1060,6 @@ func isProtectedTier(tier string, settings pluginSettings) bool {
 
 func classifyAuthTier(file authFile, rawJSON json.RawMessage) authClassification {
 	signals := make([]tierSignal, 0)
-	addTierSignal(&signals, "list.account_type", file.AccountType)
 
 	if len(bytes.TrimSpace(rawJSON)) > 0 && string(bytes.TrimSpace(rawJSON)) != "null" {
 		decoder := json.NewDecoder(bytes.NewReader(rawJSON))
@@ -1072,6 +1071,9 @@ func classifyAuthTier(file authFile, rawJSON json.RawMessage) authClassification
 	}
 
 	tier := resolveTier(signals)
+	if tier == tierUnknown {
+		tier = tierFree
+	}
 	sources := make([]string, 0, len(signals))
 	seen := map[string]struct{}{}
 	for _, signal := range signals {

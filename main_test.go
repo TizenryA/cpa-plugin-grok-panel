@@ -17,7 +17,7 @@ func TestClassifyAuthTier(t *testing.T) {
 		{"free", authFile{AccountType: "free"}, `{}`, tierFree},
 		{"super", authFile{}, `{"subscription":{"plan":"SuperGrok"}}`, tierSuper},
 		{"heavy", authFile{}, `{"account_tier":"heavy"}`, tierHeavy},
-		{"unknown", authFile{}, `{}`, tierUnknown},
+		{"unknown", authFile{}, `{}`, tierFree},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
