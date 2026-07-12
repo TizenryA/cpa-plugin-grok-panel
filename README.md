@@ -151,7 +151,7 @@ plugins:
 
 ```bash
 curl -X POST \
-  -H "Authorization: Bearer YOUR_M...KEY" \
+  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
   "https://YOUR_CPA_HOST/v0/management/plugin-store/grok-panel/install?source=YOUR_SOURCE_ID&version=v1.1.4"
 ```
 
