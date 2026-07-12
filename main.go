@@ -1215,7 +1215,7 @@ func normalizeTier(tier string) string {
 func isKnownTierKey(key string) bool {
 	norm := normalizeLoose(key)
 	switch norm {
-	case "tier", "plantype", "plan", "accounttype", "accounttier", "subscription", "subscriptiontype", "subscriptiontier", "subscriptionplan", "membership", "membershiptier", "product", "producttier", "sku", "license", "entitlement", "entitlements", "xaitier", "xaiplan", "groktier", "grokplan", "groksubscription", "servicetier":
+	case "tier", "plantype", "plan", "accounttype", "accounttier", "subscription", "subscriptiontype", "subscriptiontier", "subscriptionplan", "membership", "membershiptier", "product", "producttier", "sku", "license", "entitlement", "entitlements", "xaitier", "xaiplan", "groktier", "grokplan", "groksubscription", "servicetier", "note", "prefix", "label", "tag", "grouptag", "grouplabel":
 		return true
 	}
 	return strings.Contains(norm, "tier") || strings.Contains(norm, "plan") || strings.Contains(norm, "subscription") || strings.Contains(norm, "membership") || strings.Contains(norm, "entitlement")
