@@ -73,7 +73,7 @@ import (
 const (
 	abiVersion    uint32 = 1
 	pluginName           = "grok-panel"
-	pluginVersion        = "1.1.6"
+	pluginVersion        = "1.1.7"
 	xaiProvider          = "xai"
 
 	resourcePanelPath     = "/panel"
