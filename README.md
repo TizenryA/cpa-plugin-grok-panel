@@ -8,6 +8,14 @@
 
 ---
 
+## 友链
+
+> 感谢 [LINUX DO](https://linux.do/) 社区对开源项目的支持。本项目的开发与推广得益于社区环境，在此致敬。
+
+[![LINUX DO](https://img.shields.io/badge/LINUX%20DO-社区友链-0066cc)](https://linux.do/)
+
+---
+
 ## 这是什么
 
 Grok Panel 是一个 CPA 原生 Go 插件（`.so` shared object），安装后直接在 CPA 管理中心的插件菜单中打开。它读取当前 CPA 实例中的所有 xAI / Grok auth 文件，提供可视化的账号管理面板。
@@ -143,7 +151,7 @@ plugins:
 
 ```bash
 curl -X POST \
-  -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
+  -H "Authorization: Bearer YOUR_M...KEY" \
   "https://YOUR_CPA_HOST/v0/management/plugin-store/grok-panel/install?source=YOUR_SOURCE_ID&version=v1.1.3"
 ```
 
