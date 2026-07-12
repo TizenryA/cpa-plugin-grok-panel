@@ -1,1 +1,1 @@
-87b04df6616927986d78177ac579ecaddc1449acf7edd0fa2726d298cd7477b1  grok-panel_1.1.3_linux_amd64.zip
+12caec1fda885c44affec835d4d8825556fc458e9b4cc5a13175491cfe0f2d4a  grok-panel_1.1.4_linux_amd64.zip
