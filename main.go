@@ -59,6 +59,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -73,7 +74,7 @@ import (
 const (
 	abiVersion    uint32 = 1
 	pluginName           = "grok-panel"
-	pluginVersion        = "1.1.15"
+	pluginVersion        = "1.1.16"
 	xaiProvider          = "xai"
 
 	resourcePanelPath     = "/panel"
@@ -278,6 +279,8 @@ type healthMemory struct {
 	InvalidStreak      int
 	Tier               string
 	TierSources        []string
+	TierSource         string
+	TierDetail         string
 	LastCheckedAt      time.Time
 }
 
@@ -305,6 +308,8 @@ type fileStats struct {
 	Status         string `json:"status"`
 	Health         string `json:"health,omitempty"`
 	Tier           string `json:"tier,omitempty"`
+	TierSource     string `json:"tier_source,omitempty"`
+	TierDetail     string `json:"tier_detail,omitempty"`
 	Disabled       bool   `json:"disabled"`
 	Unavailable    bool   `json:"unavailable,omitempty"`
 	Protected      bool   `json:"protected,omitempty"`
@@ -343,6 +348,17 @@ type tierSignal struct {
 type authClassification struct {
 	Tier       string   `json:"tier"`
 	SourceKeys []string `json:"source_keys,omitempty"`
+	Source     string   `json:"source,omitempty"`
+	Detail     string   `json:"detail,omitempty"`
+}
+
+type tierVerifyRequest struct {
+	AuthIndex string `json:"auth_index"`
+}
+type tierVerifyResponse struct {
+	Version    string        `json:"version"`
+	VerifiedAt string        `json:"verified_at"`
+	Records    []checkRecord `json:"records"`
 }
 
 type healthEvaluation struct {
@@ -502,6 +518,7 @@ func handleMethod(method string, request []byte) ([]byte, error) {
 			Routes: []managementRoute{
 				{Method: http.MethodGet, Path: managementBasePath + "/checks", Description: "Return Grok account health checks."},
 				{Method: http.MethodPost, Path: managementBasePath + "/checks", Description: "Run Grok account health checks."},
+				{Method: http.MethodPost, Path: managementBasePath + "/verify-tier", Description: "Verify an xAI subscription tier using the official Grok subscriptions endpoint."},
 				{Method: http.MethodGet, Path: managementBasePath + "/settings", Description: "Return Grok panel settings."},
 				{Method: http.MethodPut, Path: managementBasePath + "/settings", Description: "Replace Grok panel settings."},
 				{Method: http.MethodPatch, Path: managementBasePath + "/settings", Description: "Update Grok panel settings."},
@@ -557,6 +574,8 @@ func handleManagement(raw []byte) ([]byte, error) {
 	}
 
 	switch {
+	case routeHasSuffix(path, "/verify-tier") || routeHasSuffix(path, "/verify_tier"):
+		return handleVerifyTier(req, method)
 	case routeHasSuffix(path, "/checks"):
 		return handleChecks(req, method)
 	case routeHasSuffix(path, "/settings"):
@@ -622,6 +641,8 @@ func handleData() ([]byte, error) {
 			Status:         f.Status,
 			Health:         snapshot.Health,
 			Tier:           snapshot.Classification.Tier,
+			TierSource:     snapshot.Classification.Source,
+			TierDetail:     snapshot.Classification.Detail,
 			Disabled:       f.Disabled,
 			Unavailable:    f.Unavailable,
 			Protected:      snapshot.Protected,
@@ -686,6 +707,173 @@ func handleChecks(req managementRequest, method string) ([]byte, error) {
 		return jsonErrorEnvelope(http.StatusBadGateway, "host_auth_list_failed", sanitizeText(err.Error()))
 	}
 	return jsonManagementEnvelope(http.StatusOK, resp)
+}
+
+func handleVerifyTier(req managementRequest, method string) ([]byte, error) {
+	if method != http.MethodPost {
+		return methodNotAllowed([]string{http.MethodPost})
+	}
+	var input tierVerifyRequest
+	if err := json.Unmarshal(req.Body, &input); err != nil || strings.TrimSpace(input.AuthIndex) == "" {
+		return jsonErrorEnvelope(http.StatusBadRequest, "invalid_request", "auth_index is required")
+	}
+	authResp, err := callHostAuthList()
+	if err != nil {
+		return jsonErrorEnvelope(http.StatusBadGateway, "host_auth_list_failed", sanitizeText(err.Error()))
+	}
+	var file authFile
+	found := false
+	for _, candidate := range authResp.Files {
+		if isXAIAuth(candidate) && authMatchesFilter(candidate, input.AuthIndex) {
+			file = candidate
+			found = true
+			break
+		}
+	}
+	if !found {
+		return jsonErrorEnvelope(http.StatusNotFound, "auth_not_found", "xAI auth not found")
+	}
+	raw, ok, rawErr := fetchAuthJSONForClassification(file)
+	local := classifyAuthTier(file, raw)
+	classification := local
+	if ok {
+		if token := extractAccessToken(raw); token != "" {
+			if verified, verifyErr := fetchOfficialGrokTier(token); verifyErr == nil {
+				classification = verified
+			} else if classification.Tier == tierUnknown {
+				classification.Detail = "官方订阅核实失败：" + sanitizeText(verifyErr.Error())
+			}
+		} else if classification.Tier == tierUnknown {
+			classification.Detail = "auth 文件未提供可用 access_token"
+		}
+	} else if classification.Tier == tierUnknown && rawErr != nil {
+		classification.Detail = "无法读取 auth 元数据"
+	}
+	evaluation := evaluateRuntimeHealth(file)
+	record := updateHealthMemory(file, classification, evaluation, currentSettings(), time.Now().UTC(), false, ok, rawErr)
+	return jsonManagementEnvelope(http.StatusOK, tierVerifyResponse{Version: pluginVersion, VerifiedAt: time.Now().UTC().Format(time.RFC3339), Records: []checkRecord{record}})
+}
+
+func extractAccessToken(raw json.RawMessage) string {
+	var value any
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	if dec.Decode(&value) != nil {
+		return ""
+	}
+	var walk func(any) string
+	walk = func(v any) string {
+		switch x := v.(type) {
+		case map[string]any:
+			for k, val := range x {
+				n := normalizeLoose(k)
+				if n == "accesstoken" || n == "token" {
+					if s, yes := val.(string); yes && strings.TrimSpace(s) != "" {
+						return strings.TrimSpace(s)
+					}
+				}
+			}
+			for _, val := range x {
+				if s := walk(val); s != "" {
+					return s
+				}
+			}
+		case []any:
+			for _, val := range x {
+				if s := walk(val); s != "" {
+					return s
+				}
+			}
+		}
+		return ""
+	}
+	return walk(value)
+}
+
+func fetchOfficialGrokTier(token string) (authClassification, error) {
+	req, _ := http.NewRequest(http.MethodGet, "https://grok.com/rest/subscriptions", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("X-XAI-Token-Auth", "xai-grok-cli")
+	req.Header.Set("X-Grok-Client-Version", "0.2.87")
+	req.Header.Set("User-Agent", "grok-cli/0.2.87")
+	req.Header.Set("Accept", "application/json")
+	client := &http.Client{Timeout: 12 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return authClassification{}, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	if err != nil {
+		return authClassification{}, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return authClassification{}, fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+	return classifyOfficialSubscriptions(body)
+}
+
+func classifyOfficialSubscriptions(raw []byte) (authClassification, error) {
+	var root any
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	if err := dec.Decode(&root); err != nil {
+		return authClassification{}, err
+	}
+	var records []map[string]any
+	var walk func(any)
+	walk = func(v any) {
+		switch x := v.(type) {
+		case map[string]any:
+			for k, val := range x {
+				n := normalizeLoose(k)
+				if n == "subscriptions" || n == "activesubscriptions" {
+					if arr, ok := val.([]any); ok {
+						for _, item := range arr {
+							if m, ok := item.(map[string]any); ok {
+								records = append(records, m)
+							}
+						}
+					}
+				}
+			}
+			for _, val := range x {
+				walk(val)
+			}
+		case []any:
+			for _, val := range x {
+				walk(val)
+			}
+		}
+	}
+	walk(root)
+	if len(records) == 0 {
+		return authClassification{Tier: tierUnknown, Source: "official_subscription", Detail: "官方接口未返回订阅记录"}, nil
+	}
+	pool := records[:0]
+	for _, r := range records {
+		status := strings.ToLower(fmt.Sprint(r["status"]))
+		if status == "active" || strings.Contains(normalizeLoose(status), "statusactive") {
+			pool = append(pool, r)
+		}
+	}
+	if len(pool) == 0 {
+		return authClassification{Tier: tierFree, Source: "official_subscription", Detail: "官方接口没有活动订阅"}, nil
+	}
+	best := tierUnknown
+	detail := ""
+	for _, r := range pool {
+		rawTier := firstNonEmpty(fmt.Sprint(r["tier"]), fmt.Sprint(r["plan"]), fmt.Sprint(r["product"]), fmt.Sprint(r["name"]))
+		t := tierFromText(rawTier)
+		if t == tierHeavy || (t == tierSuper && best != tierHeavy) {
+			best = t
+			detail = rawTier
+		}
+	}
+	if best == tierUnknown {
+		return authClassification{Tier: tierUnknown, Source: "official_subscription", Detail: "活动订阅套餐枚举暂不认识"}, nil
+	}
+	return authClassification{Tier: best, Source: "official_subscription", Detail: "官方活动订阅：" + detail, SourceKeys: []string{"official.subscriptions.tier"}}, nil
 }
 
 func handleSettings(req managementRequest, method string) ([]byte, error) {
@@ -829,6 +1017,8 @@ func updateHealthMemory(file authFile, classification authClassification, evalua
 	mem.ExplicitStatusCode = evaluation.ExplicitStatusCode
 	mem.Tier = classification.Tier
 	mem.TierSources = append([]string(nil), classification.SourceKeys...)
+	mem.TierSource = classification.Source
+	mem.TierDetail = classification.Detail
 	mem.LastCheckedAt = now
 
 	metadataError := ""
@@ -839,7 +1029,7 @@ func updateHealthMemory(file authFile, classification authClassification, evalua
 }
 
 func recordFromMemoryLocked(mem *healthMemory, settings pluginSettings, metadataError string) checkRecord {
-	classification := authClassification{Tier: normalizeTier(mem.Tier), SourceKeys: append([]string(nil), mem.TierSources...)}
+	classification := authClassification{Tier: normalizeTier(mem.Tier), SourceKeys: append([]string(nil), mem.TierSources...), Source: mem.TierSource, Detail: mem.TierDetail}
 	if classification.Tier == "" {
 		classification.Tier = tierUnknown
 	}
@@ -879,14 +1069,21 @@ func snapshotHealthForFileWithRaw(file authFile, settings pluginSettings, rawJSO
 	key := authMemoryKey(file)
 	pluginState.mu.Lock()
 	mem := pluginState.health[key]
+	classification := classifyAuthTier(file, rawJSON)
 	if mem != nil {
+		// Health history is cached, but tier must be refreshed from current metadata.
+		// Keep a prior official verification unless current metadata has an explicit stronger tier.
+		if mem.TierSource != "official_subscription" || classification.Tier == tierSuper || classification.Tier == tierHeavy {
+			mem.Tier = classification.Tier
+			mem.TierSources = append([]string(nil), classification.SourceKeys...)
+			mem.TierSource = classification.Source
+			mem.TierDetail = classification.Detail
+		}
 		record := recordFromMemoryLocked(mem, settings, "")
 		pluginState.mu.Unlock()
 		return record
 	}
 	pluginState.mu.Unlock()
-
-	classification := classifyAuthTier(file, rawJSON)
 	evaluation := evaluateRuntimeHealth(file)
 	return checkRecord{
 		AuthIndex:      file.AuthIndex,
@@ -1098,9 +1295,6 @@ func classifyAuthTier(file authFile, rawJSON json.RawMessage) authClassification
 	}
 
 	tier := resolveTier(signals)
-	if tier == tierUnknown {
-		tier = tierFree
-	}
 	sources := make([]string, 0, len(signals))
 	seen := map[string]struct{}{}
 	for _, signal := range signals {
@@ -1112,7 +1306,13 @@ func classifyAuthTier(file authFile, rawJSON json.RawMessage) authClassification
 		}
 	}
 	sort.Strings(sources)
-	return authClassification{Tier: tier, SourceKeys: sources}
+	source := "local_metadata"
+	detail := "本地 auth 元数据"
+	if tier == tierUnknown {
+		source = "unverified"
+		detail = "没有明确套餐信息，请手动核实"
+	}
+	return authClassification{Tier: tier, SourceKeys: sources, Source: source, Detail: detail}
 }
 
 func collectTierSignals(value any, path string, depth int, tierContext bool, signals *[]tierSignal) {
@@ -1198,10 +1398,10 @@ func tierFromText(text string) string {
 	if norm == "" {
 		return ""
 	}
-	if strings.Contains(norm, "heavy") || strings.Contains(norm, "grokheavy") || strings.Contains(norm, "supergrokheavy") {
+	if strings.Contains(norm, "heavy") || strings.Contains(norm, "grokheavy") || strings.Contains(norm, "supergrokheavy") || strings.Contains(norm, "supergrokpro") {
 		return tierHeavy
 	}
-	if strings.Contains(norm, "supergrok") || strings.Contains(norm, "super") || strings.Contains(norm, "premiumplus") || strings.Contains(norm, "premium") || strings.Contains(norm, "pro") || strings.Contains(norm, "paid") || strings.Contains(norm, "plus") {
+	if strings.Contains(norm, "supergrok") || strings.Contains(norm, "grokpro") || strings.Contains(norm, "super") || strings.Contains(norm, "premiumplus") || strings.Contains(norm, "premium") || strings.Contains(norm, "pro") || strings.Contains(norm, "paid") || strings.Contains(norm, "plus") {
 		return tierSuper
 	}
 	if strings.Contains(norm, "free") || strings.Contains(norm, "basic") || strings.Contains(norm, "trial") || strings.Contains(norm, "none") || strings.Contains(norm, "nosubscription") || strings.Contains(norm, "not_subscribed") {

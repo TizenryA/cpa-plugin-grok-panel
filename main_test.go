@@ -17,7 +17,7 @@ func TestClassifyAuthTier(t *testing.T) {
 		{"free", authFile{AccountType: "free"}, `{}`, tierFree},
 		{"super", authFile{}, `{"subscription":{"plan":"SuperGrok"}}`, tierSuper},
 		{"heavy", authFile{}, `{"account_tier":"heavy"}`, tierHeavy},
-		{"unknown", authFile{}, `{}`, tierFree},
+		{"unknown", authFile{}, `{}`, tierUnknown},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -53,6 +53,26 @@ func TestClassifyAuthTierOAuthListMetadataDoesNotOverrideSuperSignal(t *testing.
 	got := classifyAuthTier(authFile{AccountType: "oauth", Note: "supergrok"}, nil)
 	if got.Tier != tierSuper {
 		t.Fatalf("tier = %q, want %q; sources=%v", got.Tier, tierSuper, got.SourceKeys)
+	}
+}
+
+func TestClassifyOfficialSubscriptions(t *testing.T) {
+	tests := []struct{ name, body, want string }{
+		{"super", `{"subscriptions":[{"tier":"SUBSCRIPTION_TIER_SUPER_GROK","status":"ACTIVE"}]}`, tierSuper},
+		{"heavy", `{"activeSubscriptions":[{"tier":"SUBSCRIPTION_TIER_SUPER_GROK_HEAVY","status":"ACTIVE"}]}`, tierHeavy},
+		{"pro", `{"data":{"subscriptions":[{"tier":"SUBSCRIPTION_TIER_SUPER_GROK_PRO","status":"ACTIVE"}]}}`, tierHeavy},
+		{"inactive", `{"subscriptions":[{"tier":"SUBSCRIPTION_TIER_SUPER_GROK","status":"CANCELED"}]}`, tierFree},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := classifyOfficialSubscriptions([]byte(tt.body))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Tier != tt.want {
+				t.Fatalf("tier=%q want %q", got.Tier, tt.want)
+			}
+		})
 	}
 }
 
