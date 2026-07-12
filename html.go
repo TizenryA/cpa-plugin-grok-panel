@@ -5,7 +5,7 @@ const htmlPage = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grok 面板 v1.1.14</title>
+<title>Grok 面板 v1.1.15</title>
 <style>
 :root{
 --bg:#1a1a18;--card:#232320;--card2:#2a2a26;--ink:#e8e6df;--muted:#9a9890;--line:#3a3a34;--soft:#333330;--soft2:#3d3d38;
@@ -148,7 +148,7 @@ tr:hover{background:var(--card2)}
 .health-dot.disabled{background:var(--muted)}
 .health-dot.unknown{background:var(--soft2);border:0.08vw solid var(--muted)}
 @media (orientation:portrait),(hover:none) and (pointer:coarse){body{font-size:3.2vw;padding:3vw}.shell{width:94vw}.topline{flex-direction:column}.brand{align-items:flex-start;flex-direction:column;gap:1vh}.top-actions{justify-content:stretch;flex-direction:column;align-items:stretch}h1{font-size:6vw}h2{font-size:3.6vw}.muted{font-size:2.8vw}.status-dot{width:2.8vw;height:2.8vw}button,input,select{font-size:2.8vw;min-height:5.2vh;padding:0.9vh 2vw}input[type=checkbox]{width:4vw;height:4vw;min-height:4vw}.feedback{font-size:2.8vw;padding:1vh 2vw}.stats-grid{grid-template-columns:94vw}.stat-card{min-height:12vh}.stat-label,.stat-sub,.field label,.checkline,.help-text,.summary-row{font-size:2.6vw}.stat-value{font-size:5.2vw}.form-grid,.filter-grid{grid-template-columns:94vw}.number-input,.search-box,.select-filter,.sort-filter{width:94vw}.checkline{gap:2vw;padding:1vh 2vw}.top-actions button,.batchbar button{width:94vw}.batchbar{flex-direction:column;align-items:stretch;gap:1vh}.bar-container{width:80vw;height:1.2vh}.bar-container.small{width:24vw}.bar-fill{height:0.95vh}.chart-row{height:18vh}.chart-bar{flex-basis:3vw}.chart-bar:hover::after{font-size:2.4vw;width:42vw;bottom:16vh}.table-wrap{max-height:55vh}table{width:210vw;min-width:210vw}th,td{font-size:2.6vw;padding:0.9vh 1.4vw}th{font-size:2.3vw}.tag{font-size:2.3vw;min-width:13vw;padding:0.4vh 1vw}.cell-sub{font-size:2.2vw}.actions-cell button{font-size:2.3vw;min-height:4.8vh}}
-/* Fluent 2 / Windows 11 visual refresh v1.1.14 */
+/* Fluent 2 / Windows 11 visual refresh v1.1.15 */
 :root{
 --bg:#f8fbff;--card:rgba(255,255,255,.72);--card2:rgba(255,255,255,.9);--acrylic:linear-gradient(145deg,rgba(255,255,255,.86),rgba(255,255,255,.58));--ink:#1b1b1f;--muted:#60646f;--line:rgba(31,35,48,.12);--glass-line:rgba(255,255,255,.76);--soft:rgba(244,247,255,.78);--soft2:rgba(226,233,255,.8);
 --green:#0f8f5f;--red:#d13438;--yellow:#b7791f;--blue:#2563eb;--violet:#6c5ce7;--orange:#d97706;
@@ -207,11 +207,11 @@ h1,h2,.stat-value,.stat-label,th{font-family:var(--font-display);text-transform:
 </header>
 <div id="feedback" class="feedback">就绪：所有操作使用同源插件端点，不包含管理密钥。</div>
 <nav class="panel-tabs" aria-label="面板导航">
-<button type="button" class="panel-tab active" data-panel="accounts">账号管理</button>
-<button type="button" class="panel-tab" data-panel="stats">数据统计</button>
+<button type="button" class="panel-tab active" data-panel="stats">数据统计</button>
+<button type="button" class="panel-tab" data-panel="accounts">账号管理</button>
 <button type="button" class="panel-tab" data-panel="settings">设置</button>
 </nav>
-<div class="panel-view" data-view="stats">
+<div class="panel-view active" data-view="stats">
 <section class="stats-grid">
 <div class="stat-card"><div class="stat-label">Grok 文件总数</div><div class="stat-value" id="statTotal">--</div><div class="stat-sub" id="statTotalSub"></div></div>
 <div class="stat-card"><div class="stat-label">活跃率</div><div class="stat-value" id="statActive">--</div><div class="stat-sub" id="statActiveSub"></div><div class="bar-container"><div class="bar-fill" id="activeBar"></div></div></div>
@@ -249,7 +249,7 @@ h1,h2,.stat-value,.stat-label,th{font-family:var(--font-display);text-transform:
 <div class="auth-badge warn" id="authBadge">管理授权：检测中...</div>
 </section>
 </div>
-<div class="panel-view active" data-view="accounts">
+<div class="panel-view" data-view="accounts">
 <section class="panel"><h2>账号明细</h2>
 <div class="filter-grid">
 <div class="field"><label for="searchBox">搜索</label><input type="text" class="search-box" id="searchBox" placeholder="邮箱、状态、类型"></div>
@@ -288,7 +288,7 @@ h1,h2,.stat-value,.stat-label,th{font-family:var(--font-display);text-transform:
 </div>
 <script>
 /*
-Frontend v1.1.14 same-origin endpoint contract for a matching backend.
+Frontend v1.1.15 same-origin endpoint contract for a matching backend.
 Delete/check reuse CPA management auth. Key resolution order:
 1) panel-local saved management key
 2) parent/local cli-proxy-auth (remember password)
@@ -297,7 +297,7 @@ GET  ./data                         -> stats + files
 POST /v0/management/plugins/grok-panel/checks
 DELETE /v0/management/auth-files
 */
-var settingsKey='grok-panel-v1.1.14-settings';
+var settingsKey='grok-panel-v1.1.15-settings';
 var mgmtKeyStore='grok-panel-mgmt-key';
 var allData=[];
 var lastData=null;
@@ -317,7 +317,7 @@ function loadSettings(){var base=defaults();try{var raw=localStorage.getItem(set
 function saveSettings(){try{localStorage.setItem(settingsKey,JSON.stringify(settings))}catch(e){}}
 function initSettings(){byId('tokenLimit').value=settings.tokenLimit;byId('tokensPerReq').value=settings.tokensPerReq;byId('failThreshold').value=settings.threshold;byId('autoCheck').checked=!!settings.autoCheck;byId('autoDelete').checked=!!settings.autoDelete;byId('protectSuper').checked=!!settings.protectSuper;byId('protectHeavy').checked=!!settings.protectHeavy;byId('protectUnknown').checked=!!settings.protectUnknown;byId('rememberMgmtKey').checked=!!settings.rememberMgmtKey;if(byId('pageSize'))byId('pageSize').value=String([20,50,100,200].indexOf(Number(settings.pageSize))>=0?Number(settings.pageSize):50);var saved=loadManualManagementKey();if(saved)byId('mgmtKey').value=saved;updateAuthBadge()}
 function readSettings(evt){settings.tokenLimit=Math.max(1,parseInt(byId('tokenLimit').value,10)||2000000);settings.tokensPerReq=Math.max(1,parseInt(byId('tokensPerReq').value,10)||5000);settings.threshold=Math.max(1,parseInt(byId('failThreshold').value,10)||3);settings.autoCheck=!!byId('autoCheck').checked;settings.autoDelete=!!byId('autoDelete').checked;settings.protectSuper=!!byId('protectSuper').checked;settings.protectHeavy=!!byId('protectHeavy').checked;settings.protectUnknown=!!byId('protectUnknown').checked;settings.rememberMgmtKey=!!byId('rememberMgmtKey').checked;settings.pageSize=Math.max(1,parseInt(byId('pageSize')&&byId('pageSize').value,10)||50);saveSettings();if(evt&&evt.target&&evt.target.id==='autoDelete'&&settings.autoDelete)setFeedback('自动删除已开启：只处理未受保护且判定无效的账号。','warn');if(evt&&evt.target&&evt.target.id==='autoCheck'&&settings.autoCheck)setFeedback('自动检查已开启：刷新后会调用同源检查端点。','warn');renderAll();updateAuthBadge()}
-function switchPanel(name){name=['accounts','stats','settings'].indexOf(name)>=0?name:'accounts';document.querySelectorAll('.panel-tab').forEach(function(btn){var active=btn.getAttribute('data-panel')===name;btn.classList.toggle('active',active);btn.setAttribute('aria-selected',active?'true':'false')});document.querySelectorAll('.panel-view').forEach(function(view){view.classList.toggle('active',view.getAttribute('data-view')===name)});try{sessionStorage.setItem('grok-panel-active-view',name)}catch(e){}if(name==='accounts')window.setTimeout(function(){renderTable()},0)}
+function switchPanel(name){name=['stats','accounts','settings'].indexOf(name)>=0?name:'stats';document.querySelectorAll('.panel-tab').forEach(function(btn){var active=btn.getAttribute('data-panel')===name;btn.classList.toggle('active',active);btn.setAttribute('aria-selected',active?'true':'false')});document.querySelectorAll('.panel-view').forEach(function(view){view.classList.toggle('active',view.getAttribute('data-view')===name)});try{sessionStorage.setItem('grok-panel-active-view',name)}catch(e){}if(name==='accounts')window.setTimeout(function(){renderTable()},0)}
 function bindEvents(){document.querySelectorAll('.panel-tab').forEach(function(btn){btn.addEventListener('click',function(){switchPanel(btn.getAttribute('data-panel'))})});byId('refreshBtn').addEventListener('click',function(){fetchData(true,false)});byId('checkVisibleTopBtn').addEventListener('click',manualCheckVisible);byId('checkSelectedBtn').addEventListener('click',manualCheckSelected);byId('batchDeleteBtn').addEventListener('click',requestBatchDelete);byId('cleanupInvalidBtn').addEventListener('click',requestCleanupInvalid);byId('selectVisible').addEventListener('change',toggleVisibleSelection);byId('saveMgmtKeyBtn').addEventListener('click',saveManualManagementKey);byId('clearMgmtKeyBtn').addEventListener('click',clearManualManagementKey);['searchBox','statusFilter','typeFilter','healthFilter','usageFilter','sortFilter'].forEach(function(id){byId(id).addEventListener('input',function(){currentPage=1;renderAll()});byId(id).addEventListener('change',function(){currentPage=1;renderAll()})});if(byId('pageSize'))byId('pageSize').addEventListener('change',function(){settings.pageSize=Math.max(1,parseInt(byId('pageSize').value,10)||50);saveSettings();currentPage=1;renderAll()});function goPage(delta,abs){var meta=getPageMeta(getFilteredData());if(abs!==undefined)currentPage=abs;else currentPage+=delta;currentPage=Math.max(1,Math.min(meta.totalPages,currentPage));renderAll()}['pageFirstBtn','pagePrevBtn','pageNextBtn','pageLastBtn','pagePrevBtn2','pageNextBtn2'].forEach(function(id){var el=byId(id);if(!el)return;el.addEventListener('click',function(){if(id==='pageFirstBtn')goPage(0,1);else if(id==='pagePrevBtn'||id==='pagePrevBtn2')goPage(-1);else if(id==='pageNextBtn'||id==='pageNextBtn2')goPage(1);else if(id==='pageLastBtn'){var meta=getPageMeta(getFilteredData());goPage(0,meta.totalPages)}})});['tokenLimit','tokensPerReq','failThreshold','autoCheck','autoDelete','protectSuper','protectHeavy','protectUnknown','rememberMgmtKey'].forEach(function(id){byId(id).addEventListener('input',readSettings);byId(id).addEventListener('change',readSettings)});byId('tableBody').addEventListener('click',handleTableClick);byId('tableBody').addEventListener('change',handleTableChange);window.addEventListener('resize',function(){renderAll()})}
 function fmt(n){n=Number(n)||0;if(n>=1000000000)return(n/1000000000).toFixed(2)+'B';if(n>=1000000)return(n/1000000).toFixed(2)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n)}
 function fmtTime(){var d=new Date();return d.toLocaleTimeString('zh-CN',{hour12:false})+' '+d.toLocaleDateString('zh-CN')}
@@ -405,7 +405,7 @@ function currentProtectSettings(){return{super:!!settings.protectSuper,heavy:!!s
 function mutationSummary(data){if(!data)return'';var parts=[];if(data.deleted!==undefined)parts.push('已删除 '+data.deleted);if(data.status)parts.push('状态 '+data.status);if(Array.isArray(data.files)&&data.files.length)parts.push('文件 '+data.files.length);if(data.skipped!==undefined)parts.push('跳过 '+data.skipped);if(data.checked!==undefined)parts.push('检查 '+data.checked);if(data.message)parts.push(data.message);return parts.length?'（'+parts.join('，')+'）':''}
 function maybeAutoCheck(){if(autoCheckBusy)return;var now=Date.now();if(now-lastAutoCheckAt<300000)return;var emails=unique(allData.filter(function(x){return getEmail(x)&&!x.disabled}).map(getEmail));if(!emails.length)return;lastAutoCheckAt=now;autoCheckBusy=true;runHealthCheck(emails,'自动检查 '+emails.length+' 个',true).finally(function(){autoCheckBusy=false})}
 async function runAutoCleanup(){if(!settings.autoDelete)return;var candidates=cleanupCandidates(allData);if(!candidates.length){setFeedback('自动检查完成：没有未受保护的无效账号。','ok');return}await cleanupInvalid(candidates,'自动删除无效')}
-function init(){initSettings();bindEvents();var initialView='accounts';try{initialView=sessionStorage.getItem('grok-panel-active-view')||'accounts'}catch(e){}switchPanel(initialView);updateAuthBadge();fetchData(true,false);refreshHandle=window.setInterval(function(){fetchData(false,false)},30000)}
+function init(){initSettings();bindEvents();var initialView='stats';try{initialView=sessionStorage.getItem('grok-panel-active-view')||'stats'}catch(e){}switchPanel(initialView);updateAuthBadge();fetchData(true,false);refreshHandle=window.setInterval(function(){fetchData(false,false)},30000)}
 init();
 </script>
 </body></html>`
