@@ -29,6 +29,33 @@ func TestClassifyAuthTier(t *testing.T) {
 	}
 }
 
+func TestClassifyAuthTierFromListMetadataWithoutRawJSON(t *testing.T) {
+	tests := []struct {
+		name string
+		file authFile
+	}{
+		{name: "note", file: authFile{Note: "supergrok"}},
+		{name: "label", file: authFile{Label: "Super Grok Account"}},
+		{name: "prefix", file: authFile{Prefix: "supergrok"}},
+		{name: "tag", file: authFile{Tag: "SuperGrok"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := classifyAuthTier(tt.file, nil)
+			if got.Tier != tierSuper {
+				t.Fatalf("tier = %q, want %q; sources=%v", got.Tier, tierSuper, got.SourceKeys)
+			}
+		})
+	}
+}
+
+func TestClassifyAuthTierOAuthListMetadataDoesNotOverrideSuperSignal(t *testing.T) {
+	got := classifyAuthTier(authFile{AccountType: "oauth", Note: "supergrok"}, nil)
+	if got.Tier != tierSuper {
+		t.Fatalf("tier = %q, want %q; sources=%v", got.Tier, tierSuper, got.SourceKeys)
+	}
+}
+
 func TestExplicitAuthFailureThresholdAndProtection(t *testing.T) {
 	old := pluginState
 	pluginState = &memoryStore{settings: defaultPluginSettings(), health: map[string]*healthMemory{}}

@@ -73,7 +73,7 @@ import (
 const (
 	abiVersion    uint32 = 1
 	pluginName           = "grok-panel"
-	pluginVersion        = "1.1.12"
+	pluginVersion        = "1.1.13"
 	xaiProvider          = "xai"
 
 	resourcePanelPath     = "/panel"
@@ -194,6 +194,7 @@ type authFile struct {
 	NextRetryAfter string          `json:"next_retry_after"`
 	Note           string          `json:"note"`
 	Path           string          `json:"path"`
+	Prefix         string          `json:"prefix"`
 	Priority       int             `json:"priority"`
 	ProjectID      string          `json:"project_id"`
 	Provider       string          `json:"provider"`
@@ -204,6 +205,7 @@ type authFile struct {
 	Status         string          `json:"status"`
 	StatusMessage  string          `json:"status_message"`
 	Success        int             `json:"success"`
+	Tag            string          `json:"tag"`
 	Type           string          `json:"type"`
 	Unavailable    bool            `json:"unavailable"`
 	UpdatedAt      string          `json:"updated_at"`
@@ -1071,6 +1073,20 @@ func isProtectedTier(tier string, settings pluginSettings) bool {
 
 func classifyAuthTier(file authFile, rawJSON json.RawMessage) authClassification {
 	signals := make([]tierSignal, 0)
+
+	// Always inspect metadata already returned by host.auth.list/runtime. Some CPA
+	// versions do not expose auth_index or host.auth.get, so raw JSON may be
+	// unavailable even when note/label/name clearly identifies a SuperGrok auth.
+	listSignals := map[string]string{
+		"list.account_type": file.AccountType,
+		"list.label":        file.Label,
+		"list.note":         file.Note,
+		"list.prefix":       file.Prefix,
+		"list.tag":          file.Tag,
+	}
+	for path, value := range listSignals {
+		addTierSignal(&signals, path, value)
+	}
 
 	if len(bytes.TrimSpace(rawJSON)) > 0 && string(bytes.TrimSpace(rawJSON)) != "null" {
 		decoder := json.NewDecoder(bytes.NewReader(rawJSON))
