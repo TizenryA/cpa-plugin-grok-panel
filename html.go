@@ -5,7 +5,7 @@ const htmlPage = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grok 面板 v1.1.16</title>
+<title>Grok 面板 v1.1.17</title>
 <style>
 :root{
 --bg:#1a1a18;--card:#232320;--card2:#2a2a26;--ink:#e8e6df;--muted:#9a9890;--line:#3a3a34;--soft:#333330;--soft2:#3d3d38;
@@ -148,7 +148,7 @@ tr:hover{background:var(--card2)}
 .health-dot.disabled{background:var(--muted)}
 .health-dot.unknown{background:var(--soft2);border:0.08vw solid var(--muted)}
 @media (orientation:portrait),(hover:none) and (pointer:coarse){body{font-size:3.2vw;padding:3vw}.shell{width:94vw}.topline{flex-direction:column}.brand{align-items:flex-start;flex-direction:column;gap:1vh}.top-actions{justify-content:stretch;flex-direction:column;align-items:stretch}h1{font-size:6vw}h2{font-size:3.6vw}.muted{font-size:2.8vw}.status-dot{width:2.8vw;height:2.8vw}button,input,select{font-size:2.8vw;min-height:5.2vh;padding:0.9vh 2vw}input[type=checkbox]{width:4vw;height:4vw;min-height:4vw}.feedback{font-size:2.8vw;padding:1vh 2vw}.stats-grid{grid-template-columns:94vw}.stat-card{min-height:12vh}.stat-label,.stat-sub,.field label,.checkline,.help-text,.summary-row{font-size:2.6vw}.stat-value{font-size:5.2vw}.form-grid,.filter-grid{grid-template-columns:94vw}.number-input,.search-box,.select-filter,.sort-filter{width:94vw}.checkline{gap:2vw;padding:1vh 2vw}.top-actions button,.batchbar button{width:94vw}.batchbar{flex-direction:column;align-items:stretch;gap:1vh}.bar-container{width:80vw;height:1.2vh}.bar-container.small{width:24vw}.bar-fill{height:0.95vh}.chart-row{height:18vh}.chart-bar{flex-basis:3vw}.chart-bar:hover::after{font-size:2.4vw;width:42vw;bottom:16vh}.table-wrap{max-height:55vh}table{width:210vw;min-width:210vw}th,td{font-size:2.6vw;padding:0.9vh 1.4vw}th{font-size:2.3vw}.tag{font-size:2.3vw;min-width:13vw;padding:0.4vh 1vw}.cell-sub{font-size:2.2vw}.actions-cell button{font-size:2.3vw;min-height:4.8vh}}
-/* Fluent 2 / Windows 11 visual refresh v1.1.16 */
+/* Fluent 2 / Windows 11 visual refresh v1.1.17 */
 :root{
 --bg:#f8fbff;--card:rgba(255,255,255,.72);--card2:rgba(255,255,255,.9);--acrylic:linear-gradient(145deg,rgba(255,255,255,.86),rgba(255,255,255,.58));--ink:#1b1b1f;--muted:#60646f;--line:rgba(31,35,48,.12);--glass-line:rgba(255,255,255,.76);--soft:rgba(244,247,255,.78);--soft2:rgba(226,233,255,.8);
 --green:#0f8f5f;--red:#d13438;--yellow:#b7791f;--blue:#2563eb;--violet:#6c5ce7;--orange:#d97706;
@@ -288,7 +288,7 @@ h1,h2,.stat-value,.stat-label,th{font-family:var(--font-display);text-transform:
 </div>
 <script>
 /*
-Frontend v1.1.16 same-origin endpoint contract for a matching backend.
+Frontend v1.1.17 same-origin endpoint contract for a matching backend.
 Delete/check reuse CPA management auth. Key resolution order:
 1) panel-local saved management key
 2) parent/local cli-proxy-auth (remember password)
@@ -297,7 +297,7 @@ GET  ./data                         -> stats + files
 POST /v0/management/plugins/grok-panel/checks
 DELETE /v0/management/auth-files
 */
-var settingsKey='grok-panel-v1.1.16-settings';
+var settingsKey='grok-panel-v1.1.17-settings';
 var mgmtKeyStore='grok-panel-mgmt-key';
 var allData=[];
 var lastData=null;
