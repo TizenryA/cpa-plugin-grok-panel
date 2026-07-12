@@ -6,7 +6,7 @@
       "name": "Grok Panel",
       "description": "Grok 账号用量统计面板 - 显示文件数、请求数、Token 估算、使用率、请求趋势图、账号明细表",
       "author": "TizenryA",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "repository": "https://github.com/TizenryA/cpa-plugin-grok-panel",
       "homepage": "https://github.com/TizenryA/cpa-plugin-grok-panel",
       "license": "MIT",

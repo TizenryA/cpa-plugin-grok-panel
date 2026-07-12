@@ -172,21 +172,21 @@ type recentRequest struct {
 // ---- Plugin stats (returned to browser) ----
 
 type pluginStats struct {
-	TotalFiles   int          `json:"total_files"`
-	ActiveFiles  int          `json:"active_files"`
-	DisabledNum  int          `json:"disabled_files"`
-	TotalSuccess int          `json:"total_success"`
-	TotalFailed  int          `json:"total_failed"`
-	Files        []fileStats  `json:"files"`
+	TotalFiles    int          `json:"total_files"`
+	ActiveFiles   int          `json:"active_files"`
+	DisabledNum   int          `json:"disabled_files"`
+	TotalSuccess  int          `json:"total_success"`
+	TotalFailed   int          `json:"total_failed"`
+	Files         []fileStats  `json:"files"`
 	RecentBuckets []bucketStat `json:"recent_buckets"`
 }
 
 type fileStats struct {
-	Email     string `json:"email"`
-	Status    string `json:"status"`
-	Disabled  bool   `json:"disabled"`
-	Success   int    `json:"success"`
-	Failed    int    `json:"failed"`
+	Email    string `json:"email"`
+	Status   string `json:"status"`
+	Disabled bool   `json:"disabled"`
+	Success  int    `json:"success"`
+	Failed   int    `json:"failed"`
 }
 
 type bucketStat struct {
@@ -255,7 +255,7 @@ func handleMethod(method string, request []byte) ([]byte, error) {
 			SchemaVersion: 1,
 			Metadata: metadata{
 				Name:             "grok-panel",
-				Version:          "1.0.0",
+				Version:          "1.0.1",
 				Author:           "tizenry",
 				GitHubRepository: "https://github.com/TizenryA",
 				Logo:             "",
@@ -269,12 +269,18 @@ func handleMethod(method string, request []byte) ([]byte, error) {
 		return okEnvelope(managementRegistration{
 			Resources: []managementResource{
 				{
-					Path:        "/",
+					Path:        "/panel",
 					Menu:        "Grok 面板",
 					Description: "Grok 账号用量统计面板",
 				},
+				{
+					Path:        "/panel/data",
+					Menu:        "",
+					Description: "Grok 面板统计数据",
+				},
 			},
 		})
+
 	case "management.handle":
 		return handleManagement(request)
 	default:
@@ -294,7 +300,7 @@ func handleManagement(raw []byte) ([]byte, error) {
 
 	path := req.Path
 	// Serve data API at /data, HTML at everything else
-	if strings.HasPrefix(path, "/data") {
+	if strings.HasSuffix(strings.TrimRight(path, "/"), "/data") {
 		return handleData()
 	}
 	return handleHTML()
@@ -321,7 +327,7 @@ func handleData() ([]byte, error) {
 	}
 
 	stats := pluginStats{
-		TotalFiles:  len(xaiFiles),
+		TotalFiles:   len(xaiFiles),
 		TotalSuccess: 0,
 		TotalFailed:  0,
 	}

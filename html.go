@@ -90,7 +90,8 @@ async function fetchData(){
 document.getElementById('errorBox').innerHTML='';
 document.getElementById('statusDot').classList.remove('err');
 try{
-var resp=await fetch(window.location.pathname.replace(/\/$/,'')+'/data');
+var base=window.location.pathname.replace(/\/$/,'');
+var resp=await fetch(base+'/data');
 if(!resp.ok)throw new Error('HTTP '+resp.status);
 var data=await resp.json();
 allData=data.files||[];
