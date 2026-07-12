@@ -1,29 +1,126 @@
-# Grok Panel for CLIProxyAPI
+# Grok Panel — CLIProxyAPI 原生插件
 
-Grok Panel 是 [`router-for-me/CLIProxyAPI`](https://github.com/router-for-me/CLIProxyAPI) 的原生插件，用于统计和管理当前 CPA 实例中的 Grok / xAI auth 文件。
+> 为 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 打造的 Grok 账号管理面板，一个插件搞定统计、分类、健康检查和安全清理。
 
-> 当前版本：`v1.1.0`｜目标平台：Linux amd64｜界面语言：中文
+**版本** `v1.1.3` ｜ **平台** Linux amd64 ｜ **语言** 中文 ｜ **License** MIT
 
-## 用途与功能
+**仓库地址**：https://github.com/TizenryA/cpa-plugin-grok-panel
 
-- Grok 文件、活跃/禁用账号、成功/失败请求统计；
-- 按“成功请求 × 平均 Token”估算使用量与剩余容量；
-- 请求趋势、搜索、筛选、排序和账号明细；
-- 账号分类：`Free`、`Super`、`Heavy`、`Unknown`；
-- 手动检查单个、选中或当前可见账号；
-- 健康状态：健康、禁用、明确失效、暂时异常、未知；
-- 单个删除、批量删除、清理已确认失效账号；
-- 自动检查和自动删除开关默认关闭；
-- Super、Heavy、Unknown 默认禁止自动删除；
-- 手动删除使用二次点击，不使用弹窗；
-- 429、5xx、超时不会被当作失效账号；
-- 只有连续 3 次明确 401/403 才进入自动删除候选。
+---
 
-Token 为估算值，不是 xAI 返回的真实计费数据。默认每账号容量 `2,000,000 Token`、每次成功请求 `5,000 Token`，可在面板内调整。
+## 这是什么
 
-## 安装方式 A：插件商店（推荐）
+Grok Panel 是一个 CPA 原生 Go 插件（`.so` shared object），安装后直接在 CPA 管理中心的插件菜单中打开。它读取当前 CPA 实例中的所有 xAI / Grok auth 文件，提供可视化的账号管理面板。
 
-在 CPA 的 `config.yaml` 中启用插件并添加本仓库源：
+**不需要填写 CPA 地址或管理密钥** — 插件通过 CPA 官方 host callback 直接读取数据，每个人安装后只看到自己的账号。
+
+---
+
+## 特点
+
+- **即装即用**：通过 CPA 插件商店一键安装，无需手动下载或编译
+- **零配置**：不要求填写管理密钥、CPA 地址或任何连接信息
+- **安全隔离**：源码、Release 和配置中均不含任何密钥；不连接作者的 CPA；不上传账号数据
+- **侘寂暗色 UI**：等宽字体、方形无圆角、低饱和配色、发光健康指示灯
+- **移动端适配**：vw/vh 全比例布局，手机竖排单列
+- **可分享**：插件仓库公开，其他 CPA 用户可直接安装使用
+
+---
+
+## 功能
+
+### 统计概览
+
+- Grok 文件总数、活跃 / 禁用账号数
+- 总成功 / 失败请求数、成功率
+- 估算 Token 用量与总容量（每账号默认 200 万 Token，可调）
+- 使用率进度条（绿 / 黄 / 红三段）
+- 请求趋势柱状图（成功绿色 / 失败红色）
+- 账号类型分布（Free / Super / Heavy）
+- 健康概览（正常 / 警告 / 无效 / 未知）
+
+### 账号分类
+
+从 auth 文件的 `note`、`prefix`、`subscription`、`plan` 等字段自动识别：
+
+| 类型 | 说明 | 识别依据 |
+|------|------|----------|
+| **Free** | 普通免费账号 | 无 SuperGrok / Heavy 信号 |
+| **Super** | SuperGrok 高级套餐 | `note: supergrok`、`prefix: supergrok` 等 |
+| **Heavy** | Heavy 大用量套餐 | `note` / `prefix` 含 heavy 关键词 |
+
+无法可靠判断时归为 Free（实际使用中绝大多数 CPA xAI 账号为免费账号）。
+
+### 健康检查
+
+- 点击"检查"对单个账号发起轻量探测
+- "检查选中"批量检查勾选账号
+- "手动检查可见"检查当前筛选结果
+
+状态判定规则：
+
+| 状态 | 条件 | 说明 |
+|------|------|------|
+| **正常** | 探测成功 | 绿色发光圆点 |
+| **警告** | 429 限流 / 5xx / 超时 | 黄色圆点，不累计失效 |
+| **无效** | 连续 3 次明确 401/403 | 红色圆点，可清理 |
+| **禁用** | CPA 标记 disabled | 灰色圆点 |
+| **未知** | 尚未检查 | 灰色空心圆点 |
+
+> 429、5xx、网络超时**不会**被判定为失效。只有连续 3 次明确的认证失败（401/403）才成为自动删除候选。阈值可调。
+
+### 删除与清理
+
+- **单个删除**：点击"删除"→ 按钮变红显示"确认删除"→ 再次点击执行
+- **批量删除**：勾选多个账号 → "删除选中"
+- **一键清理**："清理无效 N"按钮，清理已确认失效且未受保护的账号
+- **不弹窗**：所有确认通过按钮变色实现，不使用 `confirm` 弹窗
+
+### 保护规则
+
+默认配置（可调整）：
+
+```
+☑ 保护 Super    — SuperGrok 账号永不自动删除
+☑ 保护 Heavy    — Heavy 账号永不自动删除
+☑ 保护未知      — 未知类型账号永不自动删除
+☐ 自动检查      — 默认关，开启后刷新时自动检查全部活跃账号
+☐ 自动删除      — 默认关，开启后在自动检查后清理失效账号
+```
+
+受保护账号的删除按钮自动禁用，并在邮箱下方显示 ⚠ 标记。手动删除仍遵守保护开关。
+
+### 筛选与搜索
+
+- 搜索：邮箱、状态、类型、健康关键词
+- 状态筛选：全部 / 活跃 / 禁用 / 其他 / 未知
+- 类型筛选：全部 / Free / Super / Heavy
+- 健康筛选：全部 / 健康 / 警告 / 无效 / 禁用 / 未知
+- 用量筛选：未使用 / 低于一半 / 一半以上 / 高于八成
+- 排序：成功请求 / 失败 / 用量 / 健康优先 / 类型 / 邮箱
+
+### 设置
+
+面板设置保存在当前浏览器本地：
+
+- 每账号估算容量（默认 2,000,000 Token）
+- 平均 Token / 请求（默认 5,000）
+- 连续认证失败阈值（默认 3）
+- 自动检查开关（默认关）
+- 自动删除开关（默认关）
+- Super / Heavy / 未知类型保护开关（默认开）
+
+> 性能相关功能默认关闭，安装后不会立即批量检查账号。
+
+---
+
+## 安装方式
+
+### 方式 A：插件商店安装（推荐）
+
+**1. 配置 CPA**
+
+在 CPA 的 `config.yaml` 中启用插件并添加本仓库为插件源：
 
 ```yaml
 plugins:
@@ -36,120 +133,66 @@ plugins:
       enabled: true
 ```
 
-重启 CPA，进入管理中心的插件商店，安装 **Grok Panel**。安装完成后，在插件菜单打开 **Grok Panel**。
+**2. 重启 CPA**
 
-也可以使用 CPA 管理 API 安装：
+**3. 安装插件**
+
+进入 CPA 管理中心 → 插件商店 → 找到 **Grok Panel** → 点击安装
+
+或使用 API 安装：
 
 ```bash
 curl -X POST \
   -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
-  "https://YOUR_CPA_HOST/v0/management/plugin-store/grok-panel/install?version=v1.1.0"
+  "https://YOUR_CPA_HOST/v0/management/plugin-store/grok-panel/install?source=YOUR_SOURCE_ID&version=v1.1.3"
 ```
 
-这里的管理密钥只用于 CPA 执行安装，不会写入插件。
+> 这里的管理密钥只用于执行安装操作，不会写入插件。
 
-## 安装方式 B：手动安装
+**4. 打开面板**
 
-从 [Releases](https://github.com/TizenryA/cpa-plugin-grok-panel/releases) 下载与宿主匹配的压缩包，例如：
+安装完成后，在 CPA 管理中心的插件菜单中点击 **Grok Panel** 即可打开。
+
+### 方式 B：手动安装
+
+从 [Releases](https://github.com/TizenryA/cpa-plugin-grok-panel/releases) 下载与宿主匹配的压缩包：
 
 ```text
-grok-panel_1.1.0_linux_amd64.zip
+grok-panel_1.1.3_linux_amd64.zip
 ```
 
 解压后将 `grok-panel.so` 放入 CPA 配置的插件目录：
 
 ```text
-plugins/grok-panel.so
+plugins/linux/amd64/grok-panel-v1.1.3.so
 ```
 
 确保配置中已启用插件，然后重启 CPA。
 
-## 不需要重复填写管理密钥
+---
 
-插件读取统计数据时使用 CPA 官方 host callback：
+## 隐私与安全
 
-```text
-host.auth.list
-host.auth.get
-host.auth.get_runtime
-```
-
-因此不需要填写 CPA 地址或密钥。实际删除时，由于 CPA 暂未提供 `host.auth.delete`，面板会复用 CPA 管理中心当前保存的连接凭据，调用官方接口：
-
-```text
-DELETE /v0/management/auth-files
-```
-
-安全边界：
-
-- 源码、Release、插件配置均不包含任何管理密钥；
-- 密钥只在当前浏览器中用于请求当前 CPA；
-- 删除仍受 CPA 官方管理鉴权保护；
-- 如果登录时没有勾选“记住密码”，检查和删除会提示重新登录并保存会话；
-- 不向浏览器返回 access token、refresh token、SSO token 或 cookie。
-
-## 账号分类
-
-插件从 CPA auth 元数据和 auth JSON 的套餐字段中识别：
-
-```text
-Free     普通账号
-Super    SuperGrok / 高级套餐
-Heavy    Heavy 套餐
-Unknown  无可靠套餐信号
-```
-
-无法可靠判断时必须归入 `Unknown`，不会猜成普通账号。Unknown 默认受自动删除保护。
-
-## 健康检查与删除规则
-
-健康检查优先使用 CPA runtime 状态和明确的认证错误：
-
-- 明确 `401 Unauthorized` 或 `403 Forbidden`：累计失效次数；
-- `429`、`5xx`、网络超时：只视为暂时异常，不累计失效；
-- 连续 3 次明确 401/403：成为自动删除候选；
-- 任意一次健康结果：失效连续次数归零；
-- Super、Heavy、Unknown：默认永不自动删除；
-- 自动检查、自动删除：均默认关闭，由用户主动开启。
-
-手动删除不要求账号先达到失效阈值，但仍遵守当前保护开关，并要求二次点击确认。
-
-## 设置
-
-面板设置保存在当前浏览器：
-
-- 每账号估算容量；
-- 平均 Token/请求；
-- 连续认证失败阈值；
-- 自动检查；
-- 自动删除；
-- Super / Heavy / Unknown 保护。
-
-性能相关功能默认关闭，不会安装后立即批量检查账号。
+- 不连接作者的 CPA，每个安装者只读取自己的数据
+- 不上传账号文件或凭据
+- 不在日志中打印 token、cookie 或授权头
+- 删除使用 CPA 官方管理 API，不直接修改宿主文件系统
+- 面板不向浏览器返回 access token、refresh token、SSO token
 
 ## 升级与卸载
 
-升级：在 CPA 插件商店点击更新，或重新调用安装接口指定新版本。
-
-卸载：在 CPA 插件管理页面卸载 `grok-panel`，然后重启或 reload 插件系统。
+- **升级**：在 CPA 插件商店点击更新，或重新调用安装接口指定新版本
+- **卸载**：在 CPA 插件管理页面卸载 `grok-panel`，然后重启 CPA
 
 ## 构建
 
-需要与 CPA 宿主兼容的 Linux、CPU 架构及 Go 工具链：
+需要与 CPA 宿主兼容的 Linux、CPU 架构及 Go 工具链（Go 1.24+）：
 
 ```bash
 go test ./...
 go vet ./...
 go build -buildmode=c-shared -o grok-panel.so .
 ```
-
-## 隐私与安全
-
-- 不连接作者的 CPA；
-- 每个安装者只读取自己的 CPA 数据；
-- 不上传账号文件或凭据；
-- 不在日志中打印 token、cookie 或授权头；
-- 删除使用 CPA 官方管理 API，不直接遍历或修改宿主文件系统。
 
 ## License
 
