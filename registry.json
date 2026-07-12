@@ -1,18 +1,16 @@
 {
+  "schema_version": 1,
   "plugins": [
     {
       "id": "grok-panel",
       "name": "Grok Panel",
-      "description": "Grok 账号用量统计面板 - 显示文件数、请求数、Token 估算、使用率",
+      "description": "Grok 账号用量统计面板 - 显示文件数、请求数、Token 估算、使用率、请求趋势图、账号明细表",
+      "author": "TizenryA",
+      "version": "1.0.0",
       "repository": "https://github.com/TizenryA/cpa-plugin-grok-panel",
-      "install_type": "github-release",
-      "asset_name": "grok-panel.so",
-      "versions": [
-        {
-          "version": "v1.0.0",
-          "url": "https://github.com/TizenryA/cpa-plugin-grok-panel/releases/download/v1.0.0/grok-panel.so"
-        }
-      ]
+      "homepage": "https://github.com/TizenryA/cpa-plugin-grok-panel",
+      "license": "MIT",
+      "tags": ["Management", "Grok", "Stats"]
     }
   ]
 }
