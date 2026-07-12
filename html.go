@@ -5,7 +5,7 @@ const htmlPage = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grok 面板 v1.1.8</title>
+<title>Grok 面板 v1.1.9</title>
 <style>
 :root{
 --bg:#1a1a18;--card:#232320;--card2:#2a2a26;--ink:#e8e6df;--muted:#9a9890;--line:#3a3a34;--soft:#333330;--soft2:#3d3d38;
@@ -208,7 +208,7 @@ tr:hover{background:var(--card2)}
 </div>
 <script>
 /*
-Frontend v1.1.8 same-origin endpoint contract for a matching backend.
+Frontend v1.1.9 same-origin endpoint contract for a matching backend.
 Delete/check reuse CPA management auth. Key resolution order:
 1) panel-local saved management key
 2) parent/local cli-proxy-auth (remember password)
@@ -217,7 +217,7 @@ GET  ./data                         -> stats + files
 POST /v0/management/plugins/grok-panel/checks
 DELETE /v0/management/auth-files
 */
-var settingsKey='grok-panel-v1.1.8-settings';
+var settingsKey='grok-panel-v1.1.9-settings';
 var mgmtKeyStore='grok-panel-mgmt-key';
 var allData=[];
 var lastData=null;
@@ -240,7 +240,7 @@ function bindEvents(){byId('refreshBtn').addEventListener('click',function(){fet
 function fmt(n){n=Number(n)||0;if(n>=1000000000)return(n/1000000000).toFixed(2)+'B';if(n>=1000000)return(n/1000000).toFixed(2)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n)}
 function fmtTime(){var d=new Date();return d.toLocaleTimeString('zh-CN',{hour12:false})+' '+d.toLocaleDateString('zh-CN')}
 function esc(v){return String(v===undefined||v===null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-function apiBase(){return window.location.pathname.replace(/\/+$/,'')}
+function apiBase(){return String(window.location.pathname||'').replace(/\/+$/,'')}
 function fixedApiUrl(endpoint){return apiBase()+'/'+String(endpoint).replace(/^\/+/, '')}
 function xorDecode(bytes,key){var out=new Uint8Array(bytes.length);for(var i=0;i<bytes.length;i++)out[i]=bytes[i]^key[i%key.length];return new TextDecoder().decode(out)}
 function storageGet(key){var stores=[];try{stores.push(localStorage)}catch(e){}try{if(window.parent&&window.parent!==window)stores.push(window.parent.localStorage)}catch(e){}try{stores.push(sessionStorage)}catch(e){}for(var i=0;i<stores.length;i++){try{var v=stores[i].getItem(key);if(v)return v}catch(e){}}return null}
@@ -251,12 +251,12 @@ function loadManualManagementKey(){return String(storageGet(mgmtKeyStore)||'').t
 function saveManualManagementKey(){var key=String(byId('mgmtKey').value||'').trim();if(!key){setFeedback('请先输入管理密钥。','warn');return}storageSet(mgmtKeyStore,key,!!settings.rememberMgmtKey);if(settings.rememberMgmtKey){try{sessionStorage.removeItem(mgmtKeyStore)}catch(e){}}else{try{localStorage.removeItem(mgmtKeyStore)}catch(e){}}setFeedback('管理密钥已保存到本面板（仅当前浏览器）。删除/检查已可用。','ok');updateAuthBadge()}
 function clearManualManagementKey(){storageRemove(mgmtKeyStore);byId('mgmtKey').value='';setFeedback('已清除本面板保存的管理密钥。','warn');updateAuthBadge()}
 function connectionFromState(state,source){if(!state)return null;var key=String(state.managementKey||state.management_key||state.key||'').trim();if(!key)return null;return{apiBase:String(state.apiBase||state.api_base||state.apiUrl||'').replace(/\/$/,''),managementKey:key,source:source||'unknown'}}
-function readCPAConnection(){var manual=loadManualManagementKey();if(manual)return{apiBase:'',managementKey:manual,source:'panel'};var input=byId('mgmtKey');if(input&&String(input.value||'').trim())return{apiBase:'',managementKey:String(input.value).trim(),source:'input'};var raw=storageGet('cli-proxy-auth');var state=decodeCliProxyAuth(raw);var conn=connectionFromState(state,'cli-proxy-auth');if(conn)return conn;try{var legacyKey=storageGet('managementKey');if(legacyKey){var apiBase=storageGet('apiBase')||storageGet('apiUrl')||'';return{apiBase:String(apiBase||'').replace(/\/$/,''),managementKey:String(legacyKey).trim(),source:'legacy'}}catch(e){}return null}
+function readCPAConnection(){var manual=loadManualManagementKey();if(manual)return{apiBase:'',managementKey:manual,source:'panel'};var input=byId('mgmtKey');if(input&&String(input.value||'').trim())return{apiBase:'',managementKey:String(input.value).trim(),source:'input'};var raw=storageGet('cli-proxy-auth');var state=decodeCliProxyAuth(raw);var conn=connectionFromState(state,'cli-proxy-auth');if(conn)return conn;try{var legacyKey=storageGet('managementKey');if(legacyKey){var apiBase=storageGet('apiBase')||storageGet('apiUrl')||'';return{apiBase:String(apiBase||'').replace(/\/$/,''),managementKey:String(legacyKey).trim(),source:'legacy'}}}catch(e){}return null}
 function updateAuthBadge(){var el=byId('authBadge');if(!el)return;var conn=readCPAConnection();if(conn&&conn.managementKey){el.textContent='管理授权：已就绪（'+conn.source+'）';el.className='auth-badge ok'}else{el.textContent='管理授权：未就绪 — 删除/检查不可用';el.className='auth-badge warn'}}
 function managementFetch(path,options){var conn=readCPAConnection();if(!conn||!conn.managementKey)throw new Error('当前没有可用的管理密钥。请在设置里填写 CPA 管理密钥并保存，或在管理中心勾选“记住密码”后重新登录。');options=options||{};options.headers=options.headers||{};options.headers.Authorization='Bearer '+conn.managementKey;if(!options.headers.accept)options.headers.accept='application/json';var base=(conn.apiBase||window.location.origin).replace(/\/$/,'');return fetch(base+'/v0/management'+path,options)}
 function setFeedback(msg,type){var el=byId('feedback');el.className='feedback '+(type||'');el.textContent=msg}
 function setBusy(flag){busy=!!flag;document.body.classList.toggle('busy',busy);updateToolbarState();renderTable()}
-function parseJsonText(text,endpoint){try{return text?JSON.parse(text):{}}catch(e){var low=String(text||'').toLowerCase();if(low.indexOf('<!doctype')>=0||low.indexOf('<html')>=0)throw new Error('操作端点 '+endpoint+' 未启用：当前后端返回了面板页面，请升级插件后端 v1.1.8 或注册该管理路由。');throw new Error('操作端点 '+endpoint+' 返回非 JSON：'+String(text||'').slice(0,90))}}
+function parseJsonText(text,endpoint){try{return text?JSON.parse(text):{}}catch(e){var low=String(text||'').toLowerCase();if(low.indexOf('<!doctype')>=0||low.indexOf('<html')>=0)throw new Error('操作端点 '+endpoint+' 未启用：当前后端返回了面板页面，请升级插件后端 v1.1.9 或注册该管理路由。');throw new Error('操作端点 '+endpoint+' 返回非 JSON：'+String(text||'').slice(0,90))}}
 async function managementPluginPost(path,payload){var resp=await managementFetch('/plugins/grok-panel/'+String(path).replace(/^\/+/,''),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload||{})});var text=await resp.text();var data=parseJsonText(text,path);if(!resp.ok)throw new Error('HTTP '+resp.status+'：'+messageFromData(data,text));return data||{}}
 async function runPluginChecks(emails){var indices=[];emails.forEach(function(email){var x=accountByEmail(email);var idx=x&&String(x.auth_index||x.authIndex||'').trim();if(idx)indices.push(idx)});var records=[];for(var i=0;i<indices.length;i++){var data=await managementPluginPost('checks',{auth_index:indices[i]});if(Array.isArray(data.records))records=records.concat(data.records)}return{records:records}}
 async function deleteAuthNames(names){names=unique(names).map(normalizeAuthFileName).filter(Boolean);if(!names.length)throw new Error('没有有效的 auth 文件名');var lastErr=null;var attempts=[{body:{names:names}},{body:{name:names[0]},onlySingle:true},{query:names}];for(var a=0;a<attempts.length;a++){var attempt=attempts[a];if(attempt.onlySingle&&names.length!==1)continue;try{var url='/auth-files';if(attempt.query){url+='?'+attempt.query.map(function(n){return 'name='+encodeURIComponent(n)}).join('&')}var opts={method:'DELETE',headers:{accept:'application/json'}};if(attempt.body){opts.headers['content-type']='application/json';opts.body=JSON.stringify(attempt.body)}var resp=await managementFetch(url,opts);var text=await resp.text();var data=text?parseJsonText(text,'auth-files'):{};if(resp.ok||resp.status===207)return data||{status:'ok'};lastErr=new Error('HTTP '+resp.status+'：'+messageFromData(data,text));if(resp.status===401||resp.status===403)throw lastErr}catch(e){lastErr=e;if(String(e.message||'').indexOf('401')>=0||String(e.message||'').indexOf('403')>=0)throw e}}throw lastErr||new Error('删除失败')}
