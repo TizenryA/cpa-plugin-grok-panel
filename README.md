@@ -2,7 +2,7 @@
 
 > 为 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 打造的 Grok 账号管理面板，一个插件搞定统计、分类、健康检查和安全清理。
 
-**版本** `v1.1.9` ｜ **平台** Linux / macOS / Windows ｜ **语言** 中文 ｜ **License** MIT
+**版本** `v1.1.10` ｜ **平台** Linux / macOS / Windows ｜ **语言** 中文 ｜ **License** MIT
 
 **仓库地址**：https://github.com/TizenryA/cpa-plugin-grok-panel
 
@@ -152,7 +152,7 @@ plugins:
 ```bash
 curl -X POST \
   -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
-  "https://YOUR_CPA_HOST/v0/management/plugin-store/grok-panel/install?source=YOUR_SOURCE_ID&version=v1.1.9"
+  "https://YOUR_CPA_HOST/v0/management/plugin-store/grok-panel/install?source=YOUR_SOURCE_ID&version=v1.1.10"
 ```
 
 > 这里的管理密钥只用于执行安装操作，不会写入插件。
@@ -166,12 +166,12 @@ curl -X POST \
 从 [Releases](https://github.com/TizenryA/cpa-plugin-grok-panel/releases) 下载与宿主匹配的压缩包：
 
 ```text
-grok-panel_1.1.9_linux_amd64.zip
-grok-panel_1.1.9_linux_arm64.zip
-grok-panel_1.1.9_darwin_amd64.zip
-grok-panel_1.1.9_darwin_arm64.zip
-grok-panel_1.1.9_windows_amd64.zip
-grok-panel_1.1.9_windows_arm64.zip
+grok-panel_1.1.10_linux_amd64.zip
+grok-panel_1.1.10_linux_arm64.zip
+grok-panel_1.1.10_darwin_amd64.zip
+grok-panel_1.1.10_darwin_arm64.zip
+grok-panel_1.1.10_windows_amd64.zip
+grok-panel_1.1.10_windows_arm64.zip
 ```
 
 解压后将插件库文件放入 CPA 配置的插件目录：
