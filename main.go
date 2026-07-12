@@ -74,7 +74,7 @@ import (
 const (
 	abiVersion    uint32 = 1
 	pluginName           = "grok-panel"
-	pluginVersion        = "1.1.18"
+	pluginVersion        = "1.1.19"
 	xaiProvider          = "xai"
 
 	resourcePanelPath     = "/panel"
@@ -848,7 +848,7 @@ func classifyOfficialSubscriptions(raw []byte) (authClassification, error) {
 	}
 	walk(root)
 	if len(records) == 0 {
-		return authClassification{Tier: tierUnknown, Source: "official_subscription", Detail: "官方接口未返回订阅记录"}, nil
+		return authClassification{Tier: tierFree, Source: "official_subscription", Detail: "官方接口未发现付费订阅"}, nil
 	}
 	pool := records[:0]
 	for _, r := range records {

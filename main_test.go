@@ -62,6 +62,7 @@ func TestClassifyOfficialSubscriptions(t *testing.T) {
 		{"heavy", `{"activeSubscriptions":[{"tier":"SUBSCRIPTION_TIER_SUPER_GROK_HEAVY","status":"ACTIVE"}]}`, tierHeavy},
 		{"pro", `{"data":{"subscriptions":[{"tier":"SUBSCRIPTION_TIER_SUPER_GROK_PRO","status":"ACTIVE"}]}}`, tierHeavy},
 		{"inactive", `{"subscriptions":[{"tier":"SUBSCRIPTION_TIER_SUPER_GROK","status":"CANCELED"}]}`, tierFree},
+		{"empty", `{"subscriptions":[]}`, tierFree},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
