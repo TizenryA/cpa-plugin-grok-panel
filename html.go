@@ -5,7 +5,7 @@ const htmlPage = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grok 面板 v1.1.4</title>
+<title>Grok 面板 v1.1.5</title>
 <style>
 :root{
 --bg:#1a1a18;--card:#232320;--card2:#2a2a26;--ink:#e8e6df;--muted:#9a9890;--line:#3a3a34;--soft:#333330;--soft2:#3d3d38;
@@ -194,7 +194,7 @@ tr:hover{background:var(--card2)}
 </div>
 <script>
 /*
-Frontend v1.1.4 same-origin endpoint contract for a matching backend.
+Frontend v1.1.5 same-origin endpoint contract for a matching backend.
 No management key is embedded in this page; CPA iframe/session auth must be supplied by the host.
 GET  ./data                         -> current stats shape used by v1.0 plus optional account_type, type, health, unavailable fields.
 POST ./accounts/check               -> body {emails:[string], threshold:number}; returns {results:[{email, health, detail, account_type}]}.
@@ -202,7 +202,7 @@ POST ./accounts/delete              -> body {emails:[string], threshold:number, 
 POST ./accounts/cleanup-invalid     -> body {emails:[string], threshold:number, protect:{super:boolean, heavy:boolean, unknown:boolean}}.
 If these mutation endpoints are absent, the UI reports that operations are unavailable instead of using any hardcoded key.
 */
-var settingsKey='grok-panel-v1.1.4-settings';
+var settingsKey='grok-panel-v1.1.5-settings';
 var allData=[];
 var lastData=null;
 var selected={};
@@ -231,7 +231,7 @@ function readCPAConnection(){try{var raw=localStorage.getItem('cli-proxy-auth');
 function managementFetch(path,options){var conn=readCPAConnection();if(!conn)throw new Error('当前管理中心没有保存管理密钥。请退出后勾选“记住密码”重新登录，再打开插件。');options=options||{};options.headers=options.headers||{};options.headers.Authorization='Bearer '+conn.managementKey;if(!options.headers.accept)options.headers.accept='application/json';return fetch((conn.apiBase||window.location.origin)+'/v0/management'+path,options)}
 function setFeedback(msg,type){var el=byId('feedback');el.className='feedback '+(type||'');el.textContent=msg}
 function setBusy(flag){busy=!!flag;document.body.classList.toggle('busy',busy);updateToolbarState();renderTable()}
-function parseJsonText(text,endpoint){try{return text?JSON.parse(text):{}}catch(e){var low=String(text||'').toLowerCase();if(low.indexOf('<!doctype')>=0||low.indexOf('<html')>=0)throw new Error('操作端点 '+endpoint+' 未启用：当前后端返回了面板页面，请升级插件后端 v1.1.4 或注册该管理路由。');throw new Error('操作端点 '+endpoint+' 返回非 JSON：'+String(text||'').slice(0,90))}}
+function parseJsonText(text,endpoint){try{return text?JSON.parse(text):{}}catch(e){var low=String(text||'').toLowerCase();if(low.indexOf('<!doctype')>=0||low.indexOf('<html')>=0)throw new Error('操作端点 '+endpoint+' 未启用：当前后端返回了面板页面，请升级插件后端 v1.1.5 或注册该管理路由。');throw new Error('操作端点 '+endpoint+' 返回非 JSON：'+String(text||'').slice(0,90))}}
 async function managementPluginPost(path,payload){var resp=await managementFetch('/plugins/grok-panel/'+String(path).replace(/^\/+/,''),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload||{})});var text=await resp.text();var data=parseJsonText(text,path);if(!resp.ok)throw new Error('HTTP '+resp.status+'：'+messageFromData(data,text));return data||{}}
 async function runPluginChecks(emails){var indices=[];emails.forEach(function(email){var x=accountByEmail(email);var idx=x&&String(x.auth_index||x.authIndex||'').trim();if(idx)indices.push(idx)});var records=[];for(var i=0;i<indices.length;i++){var data=await managementPluginPost('checks',{auth_index:indices[i]});if(Array.isArray(data.records))records=records.concat(data.records)}return{records:records}}
 async function deleteAuthNames(names){var resp=await managementFetch('/auth-files',{method:'DELETE',headers:{'content-type':'application/json'},body:JSON.stringify({names:names})});var text=await resp.text();var data=parseJsonText(text,'auth-files');if(!resp.ok)throw new Error('HTTP '+resp.status+'：'+messageFromData(data,text));return data||{}}
