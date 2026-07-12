@@ -605,7 +605,14 @@ func handleData() ([]byte, error) {
 		stats.TotalSuccess += f.Success
 		stats.TotalFailed += f.Failed
 
-		snapshot := snapshotHealthForFile(f, settings)
+		// Fetch raw auth JSON for accurate tier classification
+		var rawJSON json.RawMessage
+		if authIndex := f.AuthIndex; authIndex != "" {
+			if getResp, getErr := callHostAuthGet(authIndex); getErr == nil {
+				rawJSON = getResp.JSON
+			}
+		}
+		snapshot := snapshotHealthForFileWithRaw(f, settings, rawJSON)
 		stats.Files = append(stats.Files, fileStats{
 			AuthIndex:      f.AuthIndex,
 			Name:           f.Name,
@@ -863,6 +870,10 @@ func recordFromMemoryLocked(mem *healthMemory, settings pluginSettings, metadata
 }
 
 func snapshotHealthForFile(file authFile, settings pluginSettings) checkRecord {
+	return snapshotHealthForFileWithRaw(file, settings, nil)
+}
+
+func snapshotHealthForFileWithRaw(file authFile, settings pluginSettings, rawJSON json.RawMessage) checkRecord {
 	key := authMemoryKey(file)
 	pluginState.mu.Lock()
 	mem := pluginState.health[key]
@@ -873,7 +884,7 @@ func snapshotHealthForFile(file authFile, settings pluginSettings) checkRecord {
 	}
 	pluginState.mu.Unlock()
 
-	classification := classifyAuthTier(file, nil)
+	classification := classifyAuthTier(file, rawJSON)
 	evaluation := evaluateRuntimeHealth(file)
 	return checkRecord{
 		AuthIndex:      file.AuthIndex,
