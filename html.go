@@ -5,7 +5,7 @@ const htmlPage = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grok 面板 v1.1.19</title>
+<title>Grok 面板 v1.1.20</title>
 <style>
 :root{
 --bg:#1a1a18;--card:#232320;--card2:#2a2a26;--ink:#e8e6df;--muted:#9a9890;--line:#3a3a34;--soft:#333330;--soft2:#3d3d38;
@@ -148,7 +148,7 @@ tr:hover{background:var(--card2)}
 .health-dot.disabled{background:var(--muted)}
 .health-dot.unknown{background:var(--soft2);border:0.08vw solid var(--muted)}
 @media (orientation:portrait),(hover:none) and (pointer:coarse){body{font-size:3.2vw;padding:3vw}.shell{width:94vw}.topline{flex-direction:column}.brand{align-items:flex-start;flex-direction:column;gap:1vh}.top-actions{justify-content:stretch;flex-direction:column;align-items:stretch}h1{font-size:6vw}h2{font-size:3.6vw}.muted{font-size:2.8vw}.status-dot{width:2.8vw;height:2.8vw}button,input,select{font-size:2.8vw;min-height:5.2vh;padding:0.9vh 2vw}input[type=checkbox]{width:4vw;height:4vw;min-height:4vw}.feedback{font-size:2.8vw;padding:1vh 2vw}.stats-grid{grid-template-columns:94vw}.stat-card{min-height:12vh}.stat-label,.stat-sub,.field label,.checkline,.help-text,.summary-row{font-size:2.6vw}.stat-value{font-size:5.2vw}.form-grid,.filter-grid{grid-template-columns:94vw}.number-input,.search-box,.select-filter,.sort-filter{width:94vw}.checkline{gap:2vw;padding:1vh 2vw}.top-actions button,.batchbar button{width:94vw}.batchbar{flex-direction:column;align-items:stretch;gap:1vh}.bar-container{width:80vw;height:1.2vh}.bar-container.small{width:24vw}.bar-fill{height:0.95vh}.chart-row{height:18vh}.chart-bar{flex-basis:3vw}.chart-bar:hover::after{font-size:2.4vw;width:42vw;bottom:16vh}.table-wrap{max-height:55vh}table{width:210vw;min-width:210vw}th,td{font-size:2.6vw;padding:0.9vh 1.4vw}th{font-size:2.3vw}.tag{font-size:2.3vw;min-width:13vw;padding:0.4vh 1vw}.cell-sub{font-size:2.2vw}.actions-cell button{font-size:2.3vw;min-height:4.8vh}}
-/* Fluent 2 / Windows 11 visual refresh v1.1.19 */
+/* Fluent 2 overrides removed in performance mode.
 :root{
 --bg:#f8fbff;--card:rgba(255,255,255,.72);--card2:rgba(255,255,255,.9);--acrylic:linear-gradient(145deg,rgba(255,255,255,.86),rgba(255,255,255,.58));--ink:#1b1b1f;--muted:#60646f;--line:rgba(31,35,48,.12);--glass-line:rgba(255,255,255,.76);--soft:rgba(244,247,255,.78);--soft2:rgba(226,233,255,.8);
 --green:#0f8f5f;--red:#d13438;--yellow:#b7791f;--blue:#2563eb;--violet:#6c5ce7;--orange:#d97706;
@@ -197,6 +197,17 @@ h1,h2,.stat-value,.stat-label,th{font-family:var(--font-display);text-transform:
 @supports not ((backdrop-filter:blur(1vw)) or (-webkit-backdrop-filter:blur(1vw))){.feedback,.panel,.stat-card,.batchbar,.pagebar,.table-wrap,.auth-badge,.panel-tabs{background:var(--card2)}}
 @media (prefers-reduced-motion:reduce){body::before{animation:none}button,.stat-card,.panel,.bar-fill,.chart-bar,tr,input,select{transition:none!important}.stat-card:hover,.panel:hover,button:hover:not(:disabled){transform:none!important}*{scroll-behavior:auto!important}}
 @media (orientation:portrait),(hover:none) and (pointer:coarse){body{font-size:3.2vw;padding:3vw}.shell{width:94vw}.topline{flex-direction:column;align-items:stretch;gap:1vh}.panel-tabs{top:.5vh;gap:1vw;padding:.7vh 1vw;border-radius:3.4vw}.panel-tab{font-size:2.7vw;min-height:5.2vh;padding:.8vh 1vw}.brand{align-items:flex-start;flex-direction:column;gap:.8vh}.top-actions{display:grid;grid-template-columns:1fr;align-items:stretch}.top-actions button,.batchbar button{width:100%}h1,.brand h1{font-size:6.2vw}h2{font-size:3.7vw}.muted{font-size:2.8vw}.status-dot{width:2.8vw;height:2.8vw}.feedback{font-size:2.8vw;border-radius:3.2vw;padding:1vh 3vw}.stats-grid,.form-grid,.filter-grid{grid-template-columns:1fr;width:100%;gap:1vh}.stat-card,.panel{border-radius:4vw;padding:1.35vh 3vw}.stat-card{min-height:12vh}.stat-label,.stat-sub,.field label,.checkline,.help-text,.summary-row{font-size:2.6vw}.stat-value{font-size:5.5vw}.bar-container{width:100%;height:1.2vh}.bar-container.small{width:34vw;height:1vh}.number-input,.search-box,.select-filter,.sort-filter{width:100%}button,input,select{font-size:2.8vw;min-height:5.2vh;border-radius:2.4vw;padding:.9vh 2.4vw}input[type=checkbox]{width:4vw;height:4vw;min-height:4vw;border-radius:1vw}.checkline{gap:2vw;padding:1vh 2.4vw}.batchbar,.pagebar{border-radius:3.2vw;gap:1vh}.pagebar{align-items:stretch}.pagebar .page-info{font-size:2.6vw}.chart-row{height:18vh;border-radius:3.2vw}.chart-bar{flex-basis:3vw}.chart-bar:hover::after{font-size:2.4vw;width:44vw;bottom:16vh}.table-wrap{max-height:55vh;border-radius:3.2vw}table{width:230vw;min-width:230vw}th,td{font-size:2.6vw;padding:.95vh 1.4vw}th{font-size:2.25vw}.tag{font-size:2.25vw;min-width:12vw;padding:.38vh 1.1vw}.cell-sub,.metric-line span,.meter-head{font-size:2.2vw}.metric-line b{font-size:3vw}.actions-cell button{font-size:2.3vw;min-height:4.8vh;padding:.65vh 1.5vw}}
+*/
+/* 朴素性能模式：保留功能，移除毛玻璃、渐变、阴影和动画 */
+.panel-tabs{display:flex;gap:.7vw;margin-bottom:1.5vh;border:.12vw solid var(--line);background:var(--card);padding:.7vh .7vw;position:sticky;top:0;z-index:20}
+.panel-tab{flex:1;background:var(--card2);color:var(--muted);font-weight:700}
+.panel-tab:hover:not(:disabled){background:var(--line);color:var(--ink)}
+.panel-tab.active{background:var(--accent);border-color:var(--accent);color:var(--armed-fg)}
+.panel-view{display:none}.panel-view.active{display:block}.panel-view>.panel:last-child{margin-bottom:0}
+body::before,body::after{display:none!important}
+.feedback,.panel,.stat-card,.batchbar,.pagebar,.table-wrap,.auth-badge,.panel-tabs,th{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important;filter:none!important}
+button,input,select,.bar-fill,.chart-bar,tr,.panel,.stat-card{transition:none!important;animation:none!important;transform:none!important}
+@media (orientation:portrait),(hover:none) and (pointer:coarse){.panel-tabs{gap:1vw;padding:.7vh 1vw;top:0}.panel-tab{font-size:2.7vw;min-height:5.2vh;padding:.8vh 1vw}}
 </style>
 </head>
 <body>
@@ -289,7 +300,7 @@ h1,h2,.stat-value,.stat-label,th{font-family:var(--font-display);text-transform:
 </div>
 <script>
 /*
-Frontend v1.1.19 same-origin endpoint contract for a matching backend.
+Frontend v1.1.20 same-origin endpoint contract for a matching backend.
 Delete/check reuse CPA management auth. Key resolution order:
 1) panel-local saved management key
 2) parent/local cli-proxy-auth (remember password)
@@ -298,7 +309,7 @@ GET  ./data                         -> stats + files
 POST /v0/management/plugins/grok-panel/checks
 DELETE /v0/management/auth-files
 */
-var settingsKey='grok-panel-v1.1.19-settings';
+var settingsKey='grok-panel-v1.1.20-settings';
 var mgmtKeyStore='grok-panel-mgmt-key';
 var allData=[];
 var lastData=null;
