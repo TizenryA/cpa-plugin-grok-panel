@@ -5,7 +5,7 @@ const htmlPage = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grok 面板 v1.1.21</title>
+<title>Grok 面板 v1.1.22</title>
 <style>
 :root{
 --bg:#1a1a18;--card:#232320;--card2:#2a2a26;--ink:#e8e6df;--muted:#9a9890;--line:#3a3a34;--soft:#333330;--soft2:#3d3d38;
@@ -300,7 +300,7 @@ button,input,select,.bar-fill,.chart-bar,tr,.panel,.stat-card{transition:none!im
 </div>
 <script>
 /*
-Frontend v1.1.21 same-origin endpoint contract for a matching backend.
+Frontend v1.1.22 same-origin endpoint contract for a matching backend.
 Delete/check reuse CPA management auth. Key resolution order:
 1) panel-local saved management key
 2) parent/local cli-proxy-auth (remember password)
@@ -309,7 +309,7 @@ GET  ./data                         -> stats + files
 POST /v0/management/plugins/grok-panel/checks
 DELETE /v0/management/auth-files
 */
-var settingsKey='grok-panel-v1.1.21-settings';
+var settingsKey='grok-panel-v1.1.22-settings';
 var mgmtKeyStore='grok-panel-mgmt-key';
 var allData=[];
 var lastData=null;
