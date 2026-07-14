@@ -74,7 +74,7 @@ import (
 const (
 	abiVersion    uint32 = 1
 	pluginName           = "grok-panel"
-	pluginVersion        = "1.1.23"
+	pluginVersion        = "1.1.24"
 	xaiProvider          = "xai"
 
 	resourcePanelPath     = "/panel"
@@ -260,6 +260,7 @@ type memoryStore struct {
 	mu       sync.Mutex
 	settings pluginSettings
 	health   map[string]*healthMemory
+	limits   map[string]responsesRateLimits
 }
 
 type healthMemory struct {
@@ -287,6 +288,7 @@ type healthMemory struct {
 var pluginState = &memoryStore{
 	settings: defaultPluginSettings(),
 	health:   map[string]*healthMemory{},
+	limits:   map[string]responsesRateLimits{},
 }
 
 // ---- Plugin stats (returned to browser) ----
@@ -302,21 +304,22 @@ type pluginStats struct {
 }
 
 type fileStats struct {
-	AuthIndex      string `json:"auth_index,omitempty"`
-	Name           string `json:"name,omitempty"`
-	Email          string `json:"email"`
-	Status         string `json:"status"`
-	Health         string `json:"health,omitempty"`
-	Tier           string `json:"tier,omitempty"`
-	TierSource     string `json:"tier_source,omitempty"`
-	TierDetail     string `json:"tier_detail,omitempty"`
-	Disabled       bool   `json:"disabled"`
-	Unavailable    bool   `json:"unavailable,omitempty"`
-	Protected      bool   `json:"protected,omitempty"`
-	DeleteEligible bool   `json:"delete_eligible,omitempty"`
-	InvalidStreak  int    `json:"invalid_streak,omitempty"`
-	Success        int    `json:"success"`
-	Failed         int    `json:"failed"`
+	AuthIndex       string              `json:"auth_index,omitempty"`
+	Name            string              `json:"name,omitempty"`
+	Email           string              `json:"email"`
+	Status          string              `json:"status"`
+	Health          string              `json:"health,omitempty"`
+	Tier            string              `json:"tier,omitempty"`
+	TierSource      string              `json:"tier_source,omitempty"`
+	TierDetail      string              `json:"tier_detail,omitempty"`
+	Disabled        bool                `json:"disabled"`
+	Unavailable     bool                `json:"unavailable,omitempty"`
+	Protected       bool                `json:"protected,omitempty"`
+	DeleteEligible  bool                `json:"delete_eligible,omitempty"`
+	InvalidStreak   int                 `json:"invalid_streak,omitempty"`
+	Success         int                 `json:"success"`
+	Failed          int                 `json:"failed"`
+	ResponsesLimits responsesRateLimits `json:"responses_limits"`
 }
 
 type bucketStat struct {
@@ -408,12 +411,27 @@ type responsesProbeRecord struct {
 	DeleteIntent       bool               `json:"delete_intent"`
 	LastCheckedAt      string             `json:"last_checked_at"`
 	// Probe-specific (never includes tokens or secrets)
-	OK            bool   `json:"ok"`
-	HTTPStatus    int    `json:"http_status,omitempty"`
-	Endpoint      string `json:"endpoint,omitempty"`
-	OutputPreview string `json:"output_preview,omitempty"`
-	LatencyMS     int64  `json:"latency_ms,omitempty"`
-	Error         string `json:"error,omitempty"`
+	OK              bool                `json:"ok"`
+	HTTPStatus      int                 `json:"http_status,omitempty"`
+	Endpoint        string              `json:"endpoint,omitempty"`
+	OutputPreview   string              `json:"output_preview,omitempty"`
+	LatencyMS       int64               `json:"latency_ms,omitempty"`
+	Error           string              `json:"error,omitempty"`
+	ResponsesLimits responsesRateLimits `json:"responses_limits"`
+}
+
+type responsesRateLimits struct {
+	Available        bool      `json:"available"`
+	TokenAvailable   bool      `json:"token_available"`
+	RequestAvailable bool      `json:"request_available"`
+	Source           string    `json:"source,omitempty"`
+	TokenLimit       int64     `json:"token_limit,omitempty"`
+	TokenRemaining   int64     `json:"token_remaining,omitempty"`
+	TokenUsed        int64     `json:"token_used,omitempty"`
+	RequestLimit     int64     `json:"request_limit,omitempty"`
+	RequestRemaining int64     `json:"request_remaining,omitempty"`
+	RequestUsed      int64     `json:"request_used,omitempty"`
+	MeasuredAt       time.Time `json:"measured_at,omitempty"`
 }
 
 type authCredentials struct {
@@ -698,21 +716,22 @@ func handleData() ([]byte, error) {
 		}
 		snapshot := snapshotHealthForFileWithRaw(f, settings, rawJSON)
 		stats.Files = append(stats.Files, fileStats{
-			AuthIndex:      f.AuthIndex,
-			Name:           f.Name,
-			Email:          f.Email,
-			Status:         f.Status,
-			Health:         snapshot.Health,
-			Tier:           snapshot.Classification.Tier,
-			TierSource:     snapshot.Classification.Source,
-			TierDetail:     snapshot.Classification.Detail,
-			Disabled:       f.Disabled,
-			Unavailable:    f.Unavailable,
-			Protected:      snapshot.Protected,
-			DeleteEligible: snapshot.DeleteEligible,
-			InvalidStreak:  snapshot.InvalidStreak,
-			Success:        f.Success,
-			Failed:         f.Failed,
+			AuthIndex:       f.AuthIndex,
+			Name:            f.Name,
+			Email:           f.Email,
+			Status:          f.Status,
+			Health:          snapshot.Health,
+			Tier:            snapshot.Classification.Tier,
+			TierSource:      snapshot.Classification.Source,
+			TierDetail:      snapshot.Classification.Detail,
+			Disabled:        f.Disabled,
+			Unavailable:     f.Unavailable,
+			Protected:       snapshot.Protected,
+			DeleteEligible:  snapshot.DeleteEligible,
+			InvalidStreak:   snapshot.InvalidStreak,
+			Success:         f.Success,
+			Failed:          f.Failed,
+			ResponsesLimits: snapshotResponsesRateLimits(f),
 		})
 	}
 	stats.ActiveFiles = activeCount
@@ -961,10 +980,16 @@ func handleProbeResponses(req managementRequest, method string) ([]byte, error) 
 	endpoint := officialResponsesEndpoint
 	record.Endpoint = sanitizeProbeEndpoint(endpoint)
 	start := time.Now()
-	statusCode, outputText, probeErr := probeResponsesAPI(endpoint, creds, model, prompt)
+	statusCode, outputText, limits, probeErr := probeResponsesAPI(endpoint, creds, model, prompt)
 	record.LatencyMS = time.Since(start).Milliseconds()
 	record.HTTPStatus = statusCode
 	record.OutputPreview = truncateRunes(outputText, 120)
+	record.ResponsesLimits = limits
+	if limits.Available {
+		limits.MeasuredAt = now
+		record.ResponsesLimits = limits
+		cacheResponsesRateLimits(file, limits)
+	}
 
 	evaluation := evaluateResponsesProbe(file, statusCode, probeErr)
 	record.Health = evaluation.Health
@@ -1004,20 +1029,20 @@ func handleProbeResponses(req managementRequest, method string) ([]byte, error) 
 	return jsonManagementEnvelope(http.StatusOK, resp)
 }
 
-func probeResponsesAPI(endpoint string, creds authCredentials, model, prompt string) (int, string, error) {
+func probeResponsesAPI(endpoint string, creds authCredentials, model, prompt string) (int, string, responsesRateLimits, error) {
 	if endpoint != officialResponsesEndpoint {
-		return 0, "", fmt.Errorf("unsafe responses endpoint rejected")
+		return 0, "", responsesRateLimits{}, fmt.Errorf("unsafe responses endpoint rejected")
 	}
 	payload, err := json.Marshal(map[string]any{
 		"model": model,
 		"input": prompt,
 	})
 	if err != nil {
-		return 0, "", err
+		return 0, "", responsesRateLimits{}, err
 	}
 	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(payload))
 	if err != nil {
-		return 0, "", err
+		return 0, "", responsesRateLimits{}, err
 	}
 	req.Header.Set("Authorization", "Bearer "+creds.AccessToken)
 	req.Header.Set("Content-Type", "application/json")
@@ -1038,7 +1063,7 @@ func probeResponsesAPI(endpoint string, creds authCredentials, model, prompt str
 		req.Header.Set("X-XAI-Token-Auth", "xai-grok-cli")
 	}
 	if req.Header.Get("User-Agent") == "" {
-		req.Header.Set("User-Agent", "grok-panel/1.1.23")
+		req.Header.Set("User-Agent", "grok-panel/1.1.24")
 	}
 
 	client := &http.Client{
@@ -1049,12 +1074,13 @@ func probeResponsesAPI(endpoint string, creds authCredentials, model, prompt str
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return 0, "", err
+		return 0, "", responsesRateLimits{}, err
 	}
 	defer resp.Body.Close()
+	limits := parseResponsesRateLimits(resp.Header)
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
 	if err != nil {
-		return resp.StatusCode, "", err
+		return resp.StatusCode, "", limits, err
 	}
 	output := extractResponsesOutputText(body)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -1062,9 +1088,71 @@ func probeResponsesAPI(endpoint string, creds authCredentials, model, prompt str
 		if msg == "" {
 			msg = "HTTP " + strconv.Itoa(resp.StatusCode)
 		}
-		return resp.StatusCode, output, fmt.Errorf("%s", msg)
+		return resp.StatusCode, output, limits, fmt.Errorf("%s", msg)
 	}
-	return resp.StatusCode, output, nil
+	return resp.StatusCode, output, limits, nil
+}
+
+func parseResponsesRateLimits(header http.Header) responsesRateLimits {
+	parse := func(name string) (int64, bool) {
+		value := strings.TrimSpace(header.Get(name))
+		if value == "" {
+			return 0, false
+		}
+		n, err := strconv.ParseInt(value, 10, 64)
+		if err != nil || n < 0 {
+			return 0, false
+		}
+		return n, true
+	}
+	var limits responsesRateLimits
+	var tokenLimitOK, tokenRemainingOK, requestLimitOK, requestRemainingOK bool
+	limits.TokenLimit, tokenLimitOK = parse("x-ratelimit-limit-tokens")
+	limits.TokenRemaining, tokenRemainingOK = parse("x-ratelimit-remaining-tokens")
+	limits.RequestLimit, requestLimitOK = parse("x-ratelimit-limit-requests")
+	limits.RequestRemaining, requestRemainingOK = parse("x-ratelimit-remaining-requests")
+	limits.TokenAvailable = tokenLimitOK && tokenRemainingOK
+	limits.RequestAvailable = requestLimitOK && requestRemainingOK
+	limits.Available = limits.TokenAvailable || limits.RequestAvailable
+	if !limits.Available {
+		return responsesRateLimits{}
+	}
+	limits.Source = "responses_headers"
+	if limits.TokenAvailable {
+		limits.TokenUsed = maxInt64(0, limits.TokenLimit-limits.TokenRemaining)
+	} else {
+		limits.TokenLimit = 0
+		limits.TokenRemaining = 0
+	}
+	if limits.RequestAvailable {
+		limits.RequestUsed = maxInt64(0, limits.RequestLimit-limits.RequestRemaining)
+	} else {
+		limits.RequestLimit = 0
+		limits.RequestRemaining = 0
+	}
+	return limits
+}
+
+func maxInt64(a, b int64) int64 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func cacheResponsesRateLimits(file authFile, limits responsesRateLimits) {
+	if !limits.Available {
+		return
+	}
+	pluginState.mu.Lock()
+	defer pluginState.mu.Unlock()
+	pluginState.limits[authMemoryKey(file)] = limits
+}
+
+func snapshotResponsesRateLimits(file authFile) responsesRateLimits {
+	pluginState.mu.Lock()
+	defer pluginState.mu.Unlock()
+	return pluginState.limits[authMemoryKey(file)]
 }
 
 func evaluateResponsesProbe(file authFile, statusCode int, probeErr error) healthEvaluation {
@@ -2176,4 +2264,5 @@ func resetPluginStateForTests() {
 	defer pluginState.mu.Unlock()
 	pluginState.settings = defaultPluginSettings()
 	pluginState.health = map[string]*healthMemory{}
+	pluginState.limits = map[string]responsesRateLimits{}
 }

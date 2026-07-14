@@ -152,9 +152,81 @@ func TestExtractAuthCredentialsIgnoresUnsafeEndpointAndHeaders(t *testing.T) {
 }
 
 func TestProbeResponsesRejectsNonOfficialEndpoint(t *testing.T) {
-	status, _, err := probeResponsesAPI("http://127.0.0.1:8080/responses", authCredentials{AccessToken: "secret"}, "grok-4.5", "ping")
+	status, _, _, err := probeResponsesAPI("http://127.0.0.1:8080/responses", authCredentials{AccessToken: "secret"}, "grok-4.5", "ping")
 	if err == nil || status != 0 {
 		t.Fatalf("unsafe endpoint should be rejected before network: status=%d err=%v", status, err)
+	}
+}
+
+func TestParseResponsesRateLimits(t *testing.T) {
+	header := http.Header{
+		"X-Ratelimit-Limit-Tokens":       []string{"2000000"},
+		"X-Ratelimit-Remaining-Tokens":   []string{"1999900"},
+		"X-Ratelimit-Limit-Requests":     []string{"21"},
+		"X-Ratelimit-Remaining-Requests": []string{"20"},
+	}
+	got := parseResponsesRateLimits(header)
+	if got.TokenLimit != 2000000 || got.TokenRemaining != 1999900 || got.TokenUsed != 100 {
+		t.Fatalf("token limits=%+v", got)
+	}
+	if got.RequestLimit != 21 || got.RequestRemaining != 20 || got.RequestUsed != 1 {
+		t.Fatalf("request limits=%+v", got)
+	}
+	if got.Source != "responses_headers" || !got.Available || !got.TokenAvailable || !got.RequestAvailable {
+		t.Fatalf("source/available=%+v", got)
+	}
+}
+
+func TestParseResponsesRateLimitsMissingAndInvalid(t *testing.T) {
+	got := parseResponsesRateLimits(http.Header{"X-Ratelimit-Limit-Tokens": []string{"not-a-number"}})
+	if got.Available || got.TokenLimit != 0 || got.Source != "" {
+		t.Fatalf("invalid headers must remain unavailable: %+v", got)
+	}
+
+	requestOnly := parseResponsesRateLimits(http.Header{
+		"X-Ratelimit-Limit-Requests":     []string{"21"},
+		"X-Ratelimit-Remaining-Requests": []string{"20"},
+	})
+	if !requestOnly.Available || requestOnly.TokenAvailable || !requestOnly.RequestAvailable {
+		t.Fatalf("request-only headers=%+v", requestOnly)
+	}
+
+	partialToken := parseResponsesRateLimits(http.Header{"X-Ratelimit-Limit-Tokens": []string{"2000000"}})
+	if partialToken.Available || partialToken.TokenAvailable {
+		t.Fatalf("partial token pair must not be advertised: %+v", partialToken)
+	}
+}
+
+func TestCacheResponsesRateLimitsKeepsDeletionStateIsolated(t *testing.T) {
+	resetPluginStateForTests()
+	file := authFile{AuthIndex: "auth-limit", Email: "limit@example.com", Status: "active"}
+	settings := defaultPluginSettings()
+	now := testTime()
+	initial := updateHealthMemory(file, authClassification{Tier: tierFree}, healthEvaluation{Health: healthInvalid, Reason: "explicit_401", ExplicitStatusCode: 401}, settings, now, true, true, nil)
+	cacheResponsesRateLimits(file, responsesRateLimits{Available: true, Source: "responses_headers", TokenLimit: 2000000, TokenRemaining: 1500000, TokenUsed: 500000, RequestLimit: 21, RequestRemaining: 20, RequestUsed: 1, MeasuredAt: now})
+	after := snapshotHealthForFile(file, settings)
+	if after.InvalidStreak != initial.InvalidStreak || after.DeleteEligible != initial.DeleteEligible {
+		t.Fatalf("rate limit cache changed deletion state: before=%+v after=%+v", initial, after)
+	}
+	limits := snapshotResponsesRateLimits(file)
+	if !limits.Available || limits.TokenRemaining != 1500000 || limits.RequestRemaining != 20 {
+		t.Fatalf("cached limits=%+v", limits)
+	}
+}
+
+func TestCacheResponsesRateLimitsDoesNotCreateHealthMemory(t *testing.T) {
+	resetPluginStateForTests()
+	file := authFile{AuthIndex: "auth-limit-only", Email: "limit-only@example.com", Status: "active"}
+	cacheResponsesRateLimits(file, responsesRateLimits{
+		Available: true, TokenAvailable: true, Source: "responses_headers",
+		TokenLimit: 2000000, TokenRemaining: 1999900, TokenUsed: 100,
+	})
+	pluginState.mu.Lock()
+	_, hasHealth := pluginState.health[authMemoryKey(file)]
+	_, hasLimits := pluginState.limits[authMemoryKey(file)]
+	pluginState.mu.Unlock()
+	if hasHealth || !hasLimits {
+		t.Fatalf("limit cache must be isolated: hasHealth=%v hasLimits=%v", hasHealth, hasLimits)
 	}
 }
 
