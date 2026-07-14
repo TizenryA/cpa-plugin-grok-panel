@@ -74,7 +74,7 @@ import (
 const (
 	abiVersion    uint32 = 1
 	pluginName           = "grok-panel"
-	pluginVersion        = "1.1.22"
+	pluginVersion        = "1.1.23"
 	xaiProvider          = "xai"
 
 	resourcePanelPath     = "/panel"
@@ -361,6 +361,66 @@ type tierVerifyResponse struct {
 	Records    []checkRecord `json:"records"`
 }
 
+const (
+	officialResponsesEndpoint = "https://cli-chat-proxy.grok.com/v1/responses"
+	defaultResponsesModel     = "grok-4.5"
+	defaultResponsesInput     = "What is 2+2? One word."
+	responsesProbeTimeout     = 20 * time.Second
+)
+
+type responsesProbeRequest struct {
+	AuthIndex string `json:"auth_index"`
+	Model     string `json:"model,omitempty"`
+	Input     string `json:"input,omitempty"`
+}
+
+type responsesProbeResponse struct {
+	Version   string                 `json:"version"`
+	ProbedAt  string                 `json:"probed_at"`
+	ProbeMode string                 `json:"probe_mode"`
+	Model     string                 `json:"model"`
+	Total     int                    `json:"total"`
+	OK        int                    `json:"ok"`
+	Failed    int                    `json:"failed"`
+	Records   []responsesProbeRecord `json:"records"`
+}
+
+type responsesProbeRecord struct {
+	AuthIndex          string             `json:"auth_index,omitempty"`
+	ID                 string             `json:"id,omitempty"`
+	Name               string             `json:"name,omitempty"`
+	Email              string             `json:"email,omitempty"`
+	Provider           string             `json:"provider,omitempty"`
+	Status             string             `json:"status,omitempty"`
+	StatusMessage      string             `json:"status_message,omitempty"`
+	Unavailable        bool               `json:"unavailable"`
+	RuntimeProbeOK     bool               `json:"runtime_probe_ok"`
+	MetadataAvailable  bool               `json:"metadata_available"`
+	MetadataError      string             `json:"metadata_error,omitempty"`
+	Health             string             `json:"health"`
+	Reason             string             `json:"reason,omitempty"`
+	ExplicitStatusCode int                `json:"explicit_status_code,omitempty"`
+	InvalidStreak      int                `json:"invalid_streak"`
+	Threshold          int                `json:"threshold"`
+	Classification     authClassification `json:"classification"`
+	Protected          bool               `json:"protected"`
+	DeleteEligible     bool               `json:"delete_eligible"`
+	DeleteIntent       bool               `json:"delete_intent"`
+	LastCheckedAt      string             `json:"last_checked_at"`
+	// Probe-specific (never includes tokens or secrets)
+	OK            bool   `json:"ok"`
+	HTTPStatus    int    `json:"http_status,omitempty"`
+	Endpoint      string `json:"endpoint,omitempty"`
+	OutputPreview string `json:"output_preview,omitempty"`
+	LatencyMS     int64  `json:"latency_ms,omitempty"`
+	Error         string `json:"error,omitempty"`
+}
+
+type authCredentials struct {
+	AccessToken string
+	Headers     map[string]string
+}
+
 type healthEvaluation struct {
 	Health             string
 	Reason             string
@@ -519,6 +579,7 @@ func handleMethod(method string, request []byte) ([]byte, error) {
 				{Method: http.MethodGet, Path: managementBasePath + "/checks", Description: "Return Grok account health checks."},
 				{Method: http.MethodPost, Path: managementBasePath + "/checks", Description: "Run Grok account health checks."},
 				{Method: http.MethodPost, Path: managementBasePath + "/verify-tier", Description: "Verify an xAI subscription tier using the official Grok subscriptions endpoint."},
+				{Method: http.MethodPost, Path: managementBasePath + "/probe-responses", Description: "Probe an xAI auth using the OpenAI Responses format with credentials from the auth file."},
 				{Method: http.MethodGet, Path: managementBasePath + "/settings", Description: "Return Grok panel settings."},
 				{Method: http.MethodPut, Path: managementBasePath + "/settings", Description: "Replace Grok panel settings."},
 				{Method: http.MethodPatch, Path: managementBasePath + "/settings", Description: "Update Grok panel settings."},
@@ -576,6 +637,8 @@ func handleManagement(raw []byte) ([]byte, error) {
 	switch {
 	case routeHasSuffix(path, "/verify-tier") || routeHasSuffix(path, "/verify_tier"):
 		return handleVerifyTier(req, method)
+	case routeHasSuffix(path, "/probe-responses") || routeHasSuffix(path, "/probe_responses"):
+		return handleProbeResponses(req, method)
 	case routeHasSuffix(path, "/checks"):
 		return handleChecks(req, method)
 	case routeHasSuffix(path, "/settings"):
@@ -755,39 +818,373 @@ func handleVerifyTier(req managementRequest, method string) ([]byte, error) {
 }
 
 func extractAccessToken(raw json.RawMessage) string {
+	return extractAuthCredentials(raw).AccessToken
+}
+
+func extractAuthCredentials(raw json.RawMessage) authCredentials {
+	creds := authCredentials{Headers: map[string]string{}}
+	if len(bytes.TrimSpace(raw)) == 0 || string(bytes.TrimSpace(raw)) == "null" {
+		return creds
+	}
 	var value any
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.UseNumber()
 	if dec.Decode(&value) != nil {
-		return ""
+		return creds
 	}
-	var walk func(any) string
-	walk = func(v any) string {
+	var walk func(any, string)
+	walk = func(v any, path string) {
 		switch x := v.(type) {
 		case map[string]any:
 			for k, val := range x {
 				n := normalizeLoose(k)
-				if n == "accesstoken" || n == "token" {
-					if s, yes := val.(string); yes && strings.TrimSpace(s) != "" {
+				childPath := path + "." + n
+				switch n {
+				case "accesstoken":
+					if s, ok := val.(string); ok && strings.TrimSpace(s) != "" && creds.AccessToken == "" {
+						creds.AccessToken = strings.TrimSpace(s)
+					}
+				case "token":
+					// Prefer explicit access_token; only take generic token at top-ish paths.
+					if s, ok := val.(string); ok && strings.TrimSpace(s) != "" && creds.AccessToken == "" {
+						creds.AccessToken = strings.TrimSpace(s)
+					}
+				case "headers":
+					if m, ok := val.(map[string]any); ok {
+						for hk, hv := range m {
+							if s, ok := hv.(string); ok && strings.TrimSpace(s) != "" && allowedProbeHeader(hk) {
+								creds.Headers[hk] = strings.TrimSpace(s)
+							}
+						}
+					}
+				}
+				walk(val, childPath)
+			}
+		case []any:
+			for i, val := range x {
+				walk(val, path+"["+strconv.Itoa(i)+"]")
+			}
+		}
+	}
+	walk(value, "json")
+	return creds
+}
+
+func allowedProbeHeader(name string) bool {
+	switch strings.ToLower(strings.TrimSpace(name)) {
+	case "x-xai-token-auth", "x-grok-client-identifier", "x-grok-client-version", "user-agent":
+		return true
+	default:
+		return false
+	}
+}
+
+func handleProbeResponses(req managementRequest, method string) ([]byte, error) {
+	if method != http.MethodPost {
+		return methodNotAllowed([]string{http.MethodPost})
+	}
+	var input responsesProbeRequest
+	if err := json.Unmarshal(req.Body, &input); err != nil || strings.TrimSpace(input.AuthIndex) == "" {
+		return jsonErrorEnvelope(http.StatusBadRequest, "invalid_request", "auth_index is required")
+	}
+	model := strings.TrimSpace(input.Model)
+	if model == "" {
+		model = defaultResponsesModel
+	}
+	prompt := strings.TrimSpace(input.Input)
+	if prompt == "" {
+		prompt = defaultResponsesInput
+	}
+
+	authResp, err := callHostAuthList()
+	if err != nil {
+		return jsonErrorEnvelope(http.StatusBadGateway, "host_auth_list_failed", sanitizeText(err.Error()))
+	}
+	var file authFile
+	found := false
+	for _, candidate := range authResp.Files {
+		if isXAIAuth(candidate) && authMatchesFilter(candidate, input.AuthIndex) {
+			file = candidate
+			found = true
+			break
+		}
+	}
+	if !found {
+		return jsonErrorEnvelope(http.StatusNotFound, "auth_not_found", "xAI auth not found")
+	}
+
+	now := time.Now().UTC()
+	raw, ok, rawErr := fetchAuthJSONForClassification(file)
+	classification := classifyAuthTier(file, raw)
+	settings := currentSettings()
+
+	record := responsesProbeRecord{
+		AuthIndex:         file.AuthIndex,
+		ID:                file.ID,
+		Name:              file.Name,
+		Email:             file.Email,
+		Provider:          firstNonEmpty(file.Provider, file.Type),
+		Status:            file.Status,
+		StatusMessage:     sanitizeText(file.StatusMessage),
+		Unavailable:       file.Unavailable,
+		MetadataAvailable: ok,
+		Classification:    classification,
+		Threshold:         settings.InvalidThreshold,
+		LastCheckedAt:     now.Format(time.RFC3339),
+	}
+	if !ok {
+		record.MetadataError = "metadata_unavailable"
+		if rawErr != nil {
+			record.Error = "无法读取 auth 元数据"
+		}
+		record.OK = false
+		record.Health = healthUnknown
+		record.Reason = "auth_metadata_unavailable"
+		return jsonManagementEnvelope(http.StatusOK, responsesProbeResponse{
+			Version: pluginVersion, ProbedAt: now.Format(time.RFC3339), ProbeMode: "auth_file_responses",
+			Model: model, Total: 1, Failed: 1, Records: []responsesProbeRecord{record},
+		})
+	}
+
+	creds := extractAuthCredentials(raw)
+	if strings.TrimSpace(creds.AccessToken) == "" {
+		record.OK = false
+		record.Health = healthUnknown
+		record.Reason = "access_token_missing"
+		record.Error = "auth 文件未提供可用 access_token"
+		return jsonManagementEnvelope(http.StatusOK, responsesProbeResponse{
+			Version: pluginVersion, ProbedAt: now.Format(time.RFC3339), ProbeMode: "auth_file_responses",
+			Model: model, Total: 1, Failed: 1, Records: []responsesProbeRecord{record},
+		})
+	}
+
+	endpoint := officialResponsesEndpoint
+	record.Endpoint = sanitizeProbeEndpoint(endpoint)
+	start := time.Now()
+	statusCode, outputText, probeErr := probeResponsesAPI(endpoint, creds, model, prompt)
+	record.LatencyMS = time.Since(start).Milliseconds()
+	record.HTTPStatus = statusCode
+	record.OutputPreview = truncateRunes(outputText, 120)
+
+	evaluation := evaluateResponsesProbe(file, statusCode, probeErr)
+	record.Health = evaluation.Health
+	record.Reason = evaluation.Reason
+	record.ExplicitStatusCode = evaluation.ExplicitStatusCode
+	// Responses probe is isolated diagnostics: never mutate health history or deletion eligibility.
+	current := snapshotHealthForFileWithRaw(file, settings, raw)
+	record.InvalidStreak = current.InvalidStreak
+	record.Protected = current.Protected
+	record.DeleteEligible = false
+	record.DeleteIntent = false
+	record.RuntimeProbeOK = true
+	record.LastCheckedAt = now.Format(time.RFC3339)
+	if probeErr != nil {
+		record.OK = false
+		record.Error = sanitizeText(probeErr.Error())
+	} else {
+		record.OK = statusCode >= 200 && statusCode < 300
+		if !record.OK {
+			record.Error = "HTTP " + strconv.Itoa(statusCode)
+		}
+	}
+
+	resp := responsesProbeResponse{
+		Version:   pluginVersion,
+		ProbedAt:  now.Format(time.RFC3339),
+		ProbeMode: "auth_file_responses",
+		Model:     model,
+		Total:     1,
+		Records:   []responsesProbeRecord{record},
+	}
+	if record.OK {
+		resp.OK = 1
+	} else {
+		resp.Failed = 1
+	}
+	return jsonManagementEnvelope(http.StatusOK, resp)
+}
+
+func probeResponsesAPI(endpoint string, creds authCredentials, model, prompt string) (int, string, error) {
+	if endpoint != officialResponsesEndpoint {
+		return 0, "", fmt.Errorf("unsafe responses endpoint rejected")
+	}
+	payload, err := json.Marshal(map[string]any{
+		"model": model,
+		"input": prompt,
+	})
+	if err != nil {
+		return 0, "", err
+	}
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return 0, "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+creds.AccessToken)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	// Auth-file client headers (e.g. X-XAI-Token-Auth / User-Agent / x-grok-client-*)
+	for k, v := range creds.Headers {
+		if strings.TrimSpace(k) == "" || strings.TrimSpace(v) == "" {
+			continue
+		}
+		// Never let auth headers override Authorization with a different scheme accidentally.
+		if strings.EqualFold(k, "Authorization") {
+			continue
+		}
+		req.Header.Set(k, v)
+	}
+	// Sensible defaults when auth file has no headers block.
+	if req.Header.Get("X-XAI-Token-Auth") == "" {
+		req.Header.Set("X-XAI-Token-Auth", "xai-grok-cli")
+	}
+	if req.Header.Get("User-Agent") == "" {
+		req.Header.Set("User-Agent", "grok-panel/1.1.23")
+	}
+
+	client := &http.Client{
+		Timeout: responsesProbeTimeout,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, "", err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	if err != nil {
+		return resp.StatusCode, "", err
+	}
+	output := extractResponsesOutputText(body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		msg := sanitizeText(string(body))
+		if msg == "" {
+			msg = "HTTP " + strconv.Itoa(resp.StatusCode)
+		}
+		return resp.StatusCode, output, fmt.Errorf("%s", msg)
+	}
+	return resp.StatusCode, output, nil
+}
+
+func evaluateResponsesProbe(file authFile, statusCode int, probeErr error) healthEvaluation {
+	if file.Disabled || strings.EqualFold(strings.TrimSpace(file.Status), "disabled") {
+		return healthEvaluation{Health: healthDisabled, Reason: "disabled"}
+	}
+	if statusCode == http.StatusUnauthorized {
+		return healthEvaluation{Health: healthInvalid, Reason: "responses_401_unauthorized", ExplicitStatusCode: http.StatusUnauthorized}
+	}
+	if statusCode == http.StatusForbidden {
+		return healthEvaluation{Health: healthInvalid, Reason: "responses_403_forbidden", ExplicitStatusCode: http.StatusForbidden}
+	}
+	if statusCode == http.StatusTooManyRequests {
+		return healthEvaluation{Health: healthUnavailable, Reason: "responses_429_rate_limited", ExplicitStatusCode: statusCode}
+	}
+	if statusCode >= 500 && statusCode <= 599 {
+		return healthEvaluation{Health: healthUnavailable, Reason: "responses_5xx", ExplicitStatusCode: statusCode}
+	}
+	if statusCode >= 200 && statusCode < 300 {
+		return healthEvaluation{Health: healthHealthy, Reason: "responses_ok"}
+	}
+	if probeErr != nil {
+		// Network / timeout without HTTP status — treat as temporary unavailable, not invalid.
+		if statusCode == 0 {
+			return healthEvaluation{Health: healthUnavailable, Reason: "responses_network_error"}
+		}
+		return healthEvaluation{Health: healthUnavailable, Reason: "responses_http_" + strconv.Itoa(statusCode), ExplicitStatusCode: statusCode}
+	}
+	if statusCode > 0 {
+		return healthEvaluation{Health: healthUnknown, Reason: "responses_http_" + strconv.Itoa(statusCode), ExplicitStatusCode: statusCode}
+	}
+	return healthEvaluation{Health: healthUnknown, Reason: "responses_unknown"}
+}
+
+func extractResponsesOutputText(raw []byte) string {
+	if len(bytes.TrimSpace(raw)) == 0 {
+		return ""
+	}
+	var root any
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	if dec.Decode(&root) != nil {
+		return ""
+	}
+	if m, ok := root.(map[string]any); ok {
+		if s, ok := m["output_text"].(string); ok && strings.TrimSpace(s) != "" {
+			return strings.TrimSpace(s)
+		}
+		if arr, ok := m["output"].([]any); ok {
+			var chunks []string
+			for _, item := range arr {
+				chunks = append(chunks, collectTextChunks(item)...)
+			}
+			if joined := strings.TrimSpace(strings.Join(chunks, "")); joined != "" {
+				return joined
+			}
+		}
+		// Chat-completions shaped fallback.
+		if choices, ok := m["choices"].([]any); ok && len(choices) > 0 {
+			if choice, ok := choices[0].(map[string]any); ok {
+				if msg, ok := choice["message"].(map[string]any); ok {
+					if s, ok := msg["content"].(string); ok {
 						return strings.TrimSpace(s)
 					}
 				}
 			}
-			for _, val := range x {
-				if s := walk(val); s != "" {
-					return s
-				}
-			}
-		case []any:
-			for _, val := range x {
-				if s := walk(val); s != "" {
-					return s
-				}
+		}
+	}
+	return ""
+}
+
+func collectTextChunks(v any) []string {
+	switch x := v.(type) {
+	case string:
+		if strings.TrimSpace(x) != "" {
+			return []string{x}
+		}
+	case map[string]any:
+		var out []string
+		if s, ok := x["text"].(string); ok && strings.TrimSpace(s) != "" {
+			out = append(out, s)
+		}
+		if arr, ok := x["content"].([]any); ok {
+			for _, child := range arr {
+				out = append(out, collectTextChunks(child)...)
 			}
 		}
-		return ""
+		return out
+	case []any:
+		var out []string
+		for _, child := range x {
+			out = append(out, collectTextChunks(child)...)
+		}
+		return out
 	}
-	return walk(value)
+	return nil
+}
+
+func sanitizeProbeEndpoint(endpoint string) string {
+	u, err := url.Parse(strings.TrimSpace(endpoint))
+	if err != nil || u.Host == "" {
+		return "[invalid-endpoint]"
+	}
+	path := u.EscapedPath()
+	if path == "" {
+		path = "/"
+	}
+	return u.Scheme + "://" + u.Host + path
+}
+
+func truncateRunes(s string, max int) string {
+	s = strings.TrimSpace(s)
+	if max <= 0 || s == "" {
+		return s
+	}
+	runes := []rune(s)
+	if len(runes) <= max {
+		return s
+	}
+	return string(runes[:max]) + "..."
 }
 
 func fetchOfficialGrokTier(token string) (authClassification, error) {
