@@ -172,6 +172,7 @@ grok-panel_1.1.23_linux_arm64.zip
 grok-panel_1.1.23_darwin_amd64.zip
 grok-panel_1.1.23_darwin_arm64.zip
 grok-panel_1.1.23_windows_amd64.zip
+grok-panel_1.1.23_windows_arm64.zip
 ```
 
 解压后将插件库文件放入 CPA 配置的插件目录：
@@ -182,6 +183,7 @@ plugins/linux/arm64/grok-panel-v1.1.23.so
 plugins/darwin/amd64/grok-panel-v1.1.23.dylib
 plugins/darwin/arm64/grok-panel-v1.1.23.dylib
 plugins/windows/amd64/grok-panel-v1.1.23.dll
+plugins/windows/arm64/grok-panel-v1.1.23.dll
 ```
 
 CPA 安装时会按宿主机 `GOOS/GOARCH` 自动选择对应 zip。当前已发布：
@@ -193,6 +195,7 @@ CPA 安装时会按宿主机 `GOOS/GOARCH` 自动选择对应 zip。当前已发
 | macOS Intel | `*_darwin_amd64.zip` | `grok-panel.dylib` |
 | macOS Apple Silicon | `*_darwin_arm64.zip` | `grok-panel.dylib` |
 | Windows x86_64 | `*_windows_amd64.zip` | `grok-panel.dll` |
+| Windows ARM64 | `*_windows_arm64.zip` | `grok-panel.dll` |
 
 若出现 `plugin_install_failed`，优先检查：
 
@@ -228,32 +231,15 @@ go build -buildmode=c-shared -o grok-panel.so .
 
 交叉编译产物与 zip **不要提交进仓库**，发版时上传到 GitHub Release 即可。仓库仅保留源码与 `registry.json`。
 
-### GitHub Actions 自动编译发版
-
-| Workflow | 触发 | 作用 |
-|---|---|---|
-| `.github/workflows/ci.yml` | push / PR | `go test` / `go vet` / 版本一致性检查 |
-| `.github/workflows/release.yml` | 推送 `v*` tag 或手动运行 | 多平台 `c-shared` 编译并上传 Release zip |
-
-```bash
-# 确认 main.go / registry.json / html.go 版本号一致（当前 1.1.23）
-git tag v1.1.23
-git push origin v1.1.23
-```
-
-成功后 Release 会附带各平台 zip 与 `checksums.txt`。zip 内为无版本号库名：`grok-panel.so` / `.dylib` / `.dll`。
-
 ## 仓库结构
 
 ```text
-main.go                         # 插件后端
-html.go                         # 内嵌面板前端
-main_test.go                    # 单元测试
-registry.json                   # CPA 插件商店元数据
+main.go          # 插件后端
+html.go          # 内嵌面板前端
+main_test.go     # 单元测试
+registry.json    # CPA 插件商店元数据
 README.md
 .gitignore
-.github/workflows/ci.yml        # 测试 CI
-.github/workflows/release.yml   # 多平台编译 + Release
 ```
 
 ## License
