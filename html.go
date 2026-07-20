@@ -5,7 +5,7 @@ const htmlPage = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grok 面板 v1.1.24</title>
+<title>Grok 面板 v1.1.25</title>
 <style>
 :root{
 --bg:#1a1a18;--card:#232320;--card2:#2a2a26;--ink:#e8e6df;--muted:#9a9890;--line:#3a3a34;--soft:#333330;--soft2:#3d3d38;
@@ -301,16 +301,16 @@ button,input,select,.bar-fill,.chart-bar,tr,.panel,.stat-card{transition:none!im
 </div>
 <script>
 /*
-Frontend v1.1.24 same-origin endpoint contract for a matching backend.
+Frontend v1.1.25 authenticated management endpoint contract for a matching backend.
 Delete/check reuse CPA management auth. Key resolution order:
 1) panel-local saved management key
 2) parent/local cli-proxy-auth (remember password)
 3) same-origin fallback with empty key is rejected
-GET  ./data                         -> stats + files
+GET  /v0/management/plugins/grok-panel/data -> stats + files
 POST /v0/management/plugins/grok-panel/checks
 DELETE /v0/management/auth-files
 */
-var settingsKey='grok-panel-v1.1.24-settings';
+var settingsKey='grok-panel-v1.1.25-settings';
 var mgmtKeyStore='grok-panel-mgmt-key';
 var allData=[];
 var lastData=null;
@@ -353,10 +353,11 @@ function setFeedback(msg,type){var el=byId('feedback');el.className='feedback '+
 function setBusy(flag){busy=!!flag;document.body.classList.toggle('busy',busy);updateToolbarState();renderTable()}
 function parseJsonText(text,endpoint){try{return text?JSON.parse(text):{}}catch(e){var low=String(text||'').toLowerCase();if(low.indexOf('<!doctype')>=0||low.indexOf('<html')>=0)throw new Error('操作端点 '+endpoint+' 未启用：当前后端返回了面板页面，请升级插件后端或注册该管理路由。');throw new Error('操作端点 '+endpoint+' 返回非 JSON：'+String(text||'').slice(0,90))}}
 async function managementPluginPost(path,payload){var resp=await managementFetch('/plugins/grok-panel/'+String(path).replace(/^\/+/,''),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload||{})});var text=await resp.text();var data=parseJsonText(text,path);if(!resp.ok)throw new Error('HTTP '+resp.status+'：'+messageFromData(data,text));return data||{}}
+async function managementPluginGet(path){var resp=await managementFetch('/plugins/grok-panel/'+String(path).replace(/^\/+/,''),{method:'GET'});var text=await resp.text();var data=parseJsonText(text,path);if(!resp.ok)throw new Error('HTTP '+resp.status+'：'+messageFromData(data,text));return data||{}}
 async function runPluginChecks(emails){var indices=[];emails.forEach(function(email){var x=accountByEmail(email);var idx=x&&String(x.auth_index||x.authIndex||'').trim();if(idx)indices.push(idx)});var records=[];for(var i=0;i<indices.length;i++){var data=await managementPluginPost('checks',{auth_index:indices[i]});if(Array.isArray(data.records))records=records.concat(data.records)}return{records:records}}
 async function deleteAuthNames(names){names=unique(names).map(normalizeAuthFileName).filter(Boolean);if(!names.length)throw new Error('没有有效的 auth 文件名');var lastErr=null;var attempts=[{body:{names:names}},{body:{name:names[0]},onlySingle:true},{query:names}];for(var a=0;a<attempts.length;a++){var attempt=attempts[a];if(attempt.onlySingle&&names.length!==1)continue;try{var url='/auth-files';if(attempt.query){url+='?'+attempt.query.map(function(n){return 'name='+encodeURIComponent(n)}).join('&')}var opts={method:'DELETE',headers:{accept:'application/json'}};if(attempt.body){opts.headers['content-type']='application/json';opts.body=JSON.stringify(attempt.body)}var resp=await managementFetch(url,opts);var text=await resp.text();var data=text?parseJsonText(text,'auth-files'):{};if(resp.ok||resp.status===207)return data||{status:'ok'};lastErr=new Error('HTTP '+resp.status+'：'+messageFromData(data,text));if(resp.status===401||resp.status===403)throw lastErr}catch(e){lastErr=e;if(String(e.message||'').indexOf('401')>=0||String(e.message||'').indexOf('403')>=0)throw e}}throw lastErr||new Error('删除失败')}
 function messageFromData(data,text){if(data&&data.error&&data.error.message)return data.error.message;if(data&&data.message)return data.message;if(data&&data.error)return String(data.error);return String(text||'操作失败').slice(0,120)}
-async function fetchData(showFeedback,skipAuto){if(showFeedback)setFeedback('正在刷新数据...','');byId('statusDot').classList.remove('err');try{var resp=await fetch(fixedApiUrl('data'),{credentials:'same-origin',headers:{'accept':'application/json'}});var text=await resp.text();if(resp.status===401||resp.status===403)throw new Error('数据接口授权不可用：请检查 CPA 管理会话。');if(!resp.ok)throw new Error('HTTP '+resp.status);var data=parseJsonText(text,'data');if(data&&data.ok===true&&data.result!==undefined)data=data.result;lastData=normalizeData(data);allData=lastData.files||[];allData.forEach(function(x,i){x._rowKey=makeRowKey(x,i)});pruneSelection();renderStats(lastData);renderChart(lastData.recent_buckets||[]);renderTable();byId('lastUpdate').textContent='更新于 '+fmtTime();if(showFeedback)setFeedback('数据已刷新。','ok');if(settings.autoCheck&&!skipAuto)maybeAutoCheck()}catch(e){byId('statusDot').classList.add('err');setFeedback('连接失败：'+e.message,'error')}}
+async function fetchData(showFeedback,skipAuto){if(showFeedback)setFeedback('正在刷新数据...','');byId('statusDot').classList.remove('err');try{var data=await managementPluginGet('data');if(data&&data.ok===true&&data.result!==undefined)data=data.result;lastData=normalizeData(data);allData=lastData.files||[];allData.forEach(function(x,i){x._rowKey=makeRowKey(x,i)});pruneSelection();renderStats(lastData);renderChart(lastData.recent_buckets||[]);renderTable();byId('lastUpdate').textContent='更新于 '+fmtTime();if(showFeedback)setFeedback('数据已刷新。','ok');if(settings.autoCheck&&!skipAuto)maybeAutoCheck()}catch(e){byId('statusDot').classList.add('err');setFeedback('连接失败：'+e.message,'error')}}
 function normalizeData(data){data=data||{};if(!Array.isArray(data.files))data.files=[];return data}
 function makeRowKey(x,i){var email=getEmail(x);return email?email.toLowerCase():'row-'+i}
 function getEmail(x){return String((x&&(x.email||x.account||''))||'').trim()||String((x&&(x.name||x.id))||'').replace(/\.json$/i,'').trim()}

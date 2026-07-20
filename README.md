@@ -2,7 +2,7 @@
 
 > 为 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 打造的 Grok 账号管理面板，一个插件搞定统计、分类、健康检查和安全清理。
 
-**版本** `v1.1.24` ｜ **平台** Linux / macOS / Windows ｜ **语言** 中文 ｜ **License** MIT
+**版本** `v1.1.25` ｜ **平台** Linux / macOS / Windows ｜ **语言** 中文 ｜ **License** MIT
 
 **仓库地址**：https://github.com/TizenryA/cpa-plugin-grok-panel
 
@@ -20,14 +20,14 @@
 
 Grok Panel 是一个 CPA 原生 Go 插件（`.so` shared object），安装后直接在 CPA 管理中心的插件菜单中打开。它读取当前 CPA 实例中的所有 xAI / Grok auth 文件，提供可视化的账号管理面板。
 
-**查看统计默认零配置** — 插件通过 CPA 官方 host callback 直接读取数据，每个人安装后只看到自己的账号。删除 / 检查若管理中心 iframe 读不到会话密钥，可在面板设置里本地保存管理密钥（仅当前浏览器）。
+**动态数据统一受管理认证保护** — 插件通过 CPA 官方 host callback 读取数据，但账号统计、检查与清理均只从 `/v0/management/...` 路由提供。若管理中心 iframe 读不到会话密钥，请在面板设置里本地保存管理密钥（仅当前浏览器）。
 
 ---
 
 ## 特点
 
 - **即装即用**：通过 CPA 插件商店一键安装，无需手动下载或编译
-- **默认零配置**：统计面板无需填写 CPA 地址；删除/检查可选用面板本地保存的管理密钥
+- **管理认证保护**：统计、分类、检查和清理统一通过 CPA 管理路由；iframe 无法复用会话时可在面板本地保存管理密钥
 - **安全隔离**：源码、Release 和配置中均不含任何密钥；不连接作者的 CPA；不上传账号数据
 - **跟随系统主题**：暗色用等宽字体；亮色为橙色衬线克劳德风，自动跟随系统
 - **移动端适配**：vw/vh 全比例布局，手机竖排单列
@@ -153,7 +153,7 @@ plugins:
 ```bash
 curl -X POST \
   -H "Authorization: Bearer YOUR_MANAGEMENT_KEY" \
-  "https://YOUR_CPA_HOST/v0/management/plugin-store/grok-panel/install?source=YOUR_SOURCE_ID&version=v1.1.24"
+  "https://YOUR_CPA_HOST/v0/management/plugin-store/grok-panel/install?source=YOUR_SOURCE_ID&version=v1.1.25"
 ```
 
 > 这里的管理密钥只用于执行安装操作，不会写入插件。
@@ -167,23 +167,23 @@ curl -X POST \
 安装包**只发布在** [GitHub Releases](https://github.com/TizenryA/cpa-plugin-grok-panel/releases)（仓库源码树不再存放 zip / `.so`）。下载与宿主匹配的压缩包：
 
 ```text
-grok-panel_1.1.24_linux_amd64.zip
-grok-panel_1.1.24_linux_arm64.zip
-grok-panel_1.1.24_darwin_amd64.zip
-grok-panel_1.1.24_darwin_arm64.zip
-grok-panel_1.1.24_windows_amd64.zip
-grok-panel_1.1.24_windows_arm64.zip
+grok-panel_1.1.25_linux_amd64.zip
+grok-panel_1.1.25_linux_arm64.zip
+grok-panel_1.1.25_darwin_amd64.zip
+grok-panel_1.1.25_darwin_arm64.zip
+grok-panel_1.1.25_windows_amd64.zip
+grok-panel_1.1.25_windows_arm64.zip
 ```
 
 解压后将插件库文件放入 CPA 配置的插件目录：
 
 ```text
-plugins/linux/amd64/grok-panel-v1.1.24.so
-plugins/linux/arm64/grok-panel-v1.1.24.so
-plugins/darwin/amd64/grok-panel-v1.1.24.dylib
-plugins/darwin/arm64/grok-panel-v1.1.24.dylib
-plugins/windows/amd64/grok-panel-v1.1.24.dll
-plugins/windows/arm64/grok-panel-v1.1.24.dll
+plugins/linux/amd64/grok-panel-v1.1.25.so
+plugins/linux/arm64/grok-panel-v1.1.25.so
+plugins/darwin/amd64/grok-panel-v1.1.25.dylib
+plugins/darwin/arm64/grok-panel-v1.1.25.dylib
+plugins/windows/amd64/grok-panel-v1.1.25.dll
+plugins/windows/arm64/grok-panel-v1.1.25.dll
 ```
 
 CPA 安装时会按宿主机 `GOOS/GOARCH` 自动选择对应 zip。当前已发布：

@@ -3,9 +3,79 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 )
+
+func TestManagementRegistrationKeepsDynamicDataBehindManagementAuth(t *testing.T) {
+	body, err := handleMethod("management.register", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var env struct {
+		OK     bool                   `json:"ok"`
+		Result managementRegistration `json:"result"`
+	}
+	if err := json.Unmarshal(body, &env); err != nil {
+		t.Fatal(err)
+	}
+	if !env.OK {
+		t.Fatalf("registration envelope is not ok: %s", body)
+	}
+	dataRoute := managementBasePath + "/data"
+	foundDataRoute := false
+	for _, route := range env.Result.Routes {
+		if route.Path == dataRoute && route.Method == http.MethodGet {
+			foundDataRoute = true
+		}
+	}
+	if !foundDataRoute {
+		t.Fatalf("authenticated data route %q is missing", dataRoute)
+	}
+	for _, resource := range env.Result.Resources {
+		if resource.Path == resourcePanelDataPath {
+			t.Fatalf("dynamic data must not be registered as public resource: %+v", resource)
+		}
+	}
+}
+
+func TestPanelFetchesDataThroughManagementRoute(t *testing.T) {
+	if !strings.Contains(htmlPage, "managementPluginGet('data')") {
+		t.Fatal("panel must load account data through the authenticated management route")
+	}
+	if strings.Contains(htmlPage, "fetch(fixedApiUrl('data')") {
+		t.Fatal("panel must not load dynamic account data from a public resource path")
+	}
+}
+
+func TestLegacyPublicDataPathCannotDispatchDynamicData(t *testing.T) {
+	oldHostCaller := hostCaller
+	hostCaller = func(method string, payload any) (json.RawMessage, error) {
+		t.Fatalf("legacy public data path reached privileged host callback %q", method)
+		return nil, nil
+	}
+	defer func() { hostCaller = oldHostCaller }()
+
+	body, err := handleManagement([]byte(`{"method":"GET","path":"/panel/data"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(body), `"files"`) {
+		t.Fatalf("legacy public path returned dynamic account data: %s", body)
+	}
+}
+
+func TestManagementDataRouteAcceptsRegisteredPathForms(t *testing.T) {
+	for _, path := range []string{managementBasePath + "/data", "/v0/management" + managementBasePath + "/data"} {
+		if !managementRouteMatches(path, managementBasePath+"/data") {
+			t.Fatalf("registered management data path did not match: %q", path)
+		}
+	}
+	if managementRouteMatches(resourcePanelDataPath, managementBasePath+"/data") {
+		t.Fatal("legacy public resource path must not match the management data route")
+	}
+}
 
 func TestClassifyAuthTier(t *testing.T) {
 	cases := []struct {

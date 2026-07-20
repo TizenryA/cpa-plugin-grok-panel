@@ -74,11 +74,11 @@ import (
 const (
 	abiVersion    uint32 = 1
 	pluginName           = "grok-panel"
-	pluginVersion        = "1.1.24"
+	pluginVersion        = "1.1.25"
 	xaiProvider          = "xai"
 
 	resourcePanelPath     = "/panel"
-	resourcePanelDataPath = "/panel/data"
+	resourcePanelDataPath = "/panel/data" // legacy path kept only for regression checks; never register it as a resource
 	managementBasePath    = "/plugins/grok-panel"
 
 	defaultInvalidThreshold = 3
@@ -594,6 +594,7 @@ func handleMethod(method string, request []byte) ([]byte, error) {
 	case "management.register":
 		return okEnvelope(managementRegistration{
 			Routes: []managementRoute{
+				{Method: http.MethodGet, Path: managementBasePath + "/data", Description: "Return Grok account statistics and auth metadata."},
 				{Method: http.MethodGet, Path: managementBasePath + "/checks", Description: "Return Grok account health checks."},
 				{Method: http.MethodPost, Path: managementBasePath + "/checks", Description: "Run Grok account health checks."},
 				{Method: http.MethodPost, Path: managementBasePath + "/verify-tier", Description: "Verify an xAI subscription tier using the official Grok subscriptions endpoint."},
@@ -605,7 +606,6 @@ func handleMethod(method string, request []byte) ([]byte, error) {
 			},
 			Resources: []managementResource{
 				{Path: resourcePanelPath, Menu: "Grok Panel", Description: "Grok account usage panel."},
-				{Path: resourcePanelDataPath, Description: "Grok panel public data endpoint."},
 			},
 		})
 
@@ -663,7 +663,7 @@ func handleManagement(raw []byte) ([]byte, error) {
 		return handleSettings(req, method)
 	case routeHasSuffix(path, "/delete-intent") || routeHasSuffix(path, "/delete_intent"):
 		return handleDeleteIntent(req, method)
-	case routeHasSuffix(path, "/data"):
+	case managementRouteMatches(path, managementBasePath+"/data"):
 		if method != http.MethodGet {
 			return methodNotAllowed([]string{http.MethodGet})
 		}
@@ -1063,7 +1063,7 @@ func probeResponsesAPI(endpoint string, creds authCredentials, model, prompt str
 		req.Header.Set("X-XAI-Token-Auth", "xai-grok-cli")
 	}
 	if req.Header.Get("User-Agent") == "" {
-		req.Header.Set("User-Agent", "grok-panel/1.1.24")
+		req.Header.Set("User-Agent", "grok-panel/1.1.25")
 	}
 
 	client := &http.Client{
@@ -2165,6 +2165,12 @@ func routeHasSuffix(path, suffix string) bool {
 		return path == ""
 	}
 	return path == suffix || strings.HasSuffix(path, suffix)
+}
+
+func managementRouteMatches(path, route string) bool {
+	path = strings.ToLower(strings.TrimRight(strings.TrimSpace(path), "/"))
+	route = strings.ToLower(strings.TrimRight(strings.TrimSpace(route), "/"))
+	return path == route || path == "/v0/management"+route
 }
 
 func isXAIAuth(file authFile) bool {
